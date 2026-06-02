@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Baby, Car, CloudRain, MapPin, Ticket } from "lucide-react";
+import { MapNavButton } from "@/components/place/map-nav-button";
 import { RatingStars } from "@/components/place/rating-stars";
 import { getCategoryLabel } from "@/data/place-options";
 import { getPlaceRepository } from "@/lib/repositories";
@@ -111,6 +112,7 @@ export default async function PlacePage({ params }: PlacePageProps) {
               <div className="rounded-2xl border border-[#ffe0ce] bg-[#fff8ee] p-4 text-sm font-bold leading-7 text-[#76584e]">
                 {place.address}
               </div>
+              <MapNavButton place={place} />
             </aside>
           </div>
         </section>
