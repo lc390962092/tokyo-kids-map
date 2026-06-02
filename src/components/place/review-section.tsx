@@ -104,16 +104,16 @@ export function ReviewSection({ placeId }: { placeId: string }) {
         onSubmit={handleSubmit}
         className="space-y-4 rounded-3xl border border-[#ffe0ce] bg-white p-5 shadow-sm"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <input
             type="text"
             placeholder="昵称（选填）"
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
             maxLength={20}
-            className="flex-1 rounded-2xl border border-[#ffe0ce] bg-[#fffaf4] px-4 py-3 text-sm font-bold text-[#2c3834] outline-none placeholder:text-[#c4a99b] focus:border-[#ff8c73]"
+            className="min-w-0 flex-1 rounded-2xl border border-[#ffe0ce] bg-[#fffaf4] px-4 py-3 text-sm font-bold text-[#2c3834] outline-none placeholder:text-[#c4a99b] focus:border-[#ff8c73]"
           />
-          <div className="flex gap-1">
+          <div className="flex flex-shrink-0 gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
               <button
                 key={i}
