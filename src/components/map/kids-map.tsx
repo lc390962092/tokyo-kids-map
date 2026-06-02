@@ -199,6 +199,11 @@ export default function KidsMap({ places, selectedPlaceId }: KidsMapProps) {
             .setPopup(popup)
             .addTo(map);
 
+          markerElement.addEventListener("click", (e) => {
+            e.stopPropagation();
+            marker.togglePopup();
+          });
+
           markersRef.current.push(marker);
         });
       };
