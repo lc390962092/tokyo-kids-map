@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { MapPin } from "lucide-react";
 import type { Place } from "@/types/place";
 
@@ -8,9 +9,14 @@ type MapNavButtonProps = {
 };
 
 export function MapNavButton({ place }: MapNavButtonProps) {
-  const isApple =
-    typeof navigator !== "undefined" &&
-    /iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent);
+  const [isApple, setIsApple] = useState(false);
+
+  useEffect(() => {
+    setIsApple(
+      typeof navigator !== "undefined" &&
+        /iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent),
+    );
+  }, []);
 
   const appleUrl = `http://maps.apple.com/?daddr=${place.latitude},${place.longitude}&dirflg=d`;
   const googleUrl = `https://www.google.com/maps/dir/?api=1&destination=${place.latitude},${place.longitude}`;
