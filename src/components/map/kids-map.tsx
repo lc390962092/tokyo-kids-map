@@ -68,7 +68,7 @@ export default function KidsMap({ places, selectedPlaceId }: KidsMapProps) {
       markerElement.type = "button";
       markerElement.title = place.nameZh;
       markerElement.className =
-        "grid h-9 w-9 place-items-center rounded-full border-2 border-white text-sm font-black text-white shadow-lg transition hover:scale-110";
+        "grid h-11 w-11 place-items-center rounded-full border-2 border-white text-base font-black text-white shadow-lg transition active:scale-95 cursor-pointer";
       markerElement.style.backgroundColor = getCategoryColor(place.category);
       markerElement.textContent = place.freeEntry ? "免" : "¥";
 
