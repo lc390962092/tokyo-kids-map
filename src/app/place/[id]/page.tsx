@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Baby, Car, CloudRain, MapPin, Ticket } from "lucide-react";
 import { MapNavButton } from "@/components/place/map-nav-button";
 import { RatingStars } from "@/components/place/rating-stars";
+import { ReviewSection } from "@/components/place/review-section";
 import { getCategoryLabel } from "@/data/place-options";
 import { getPlaceRepository } from "@/lib/repositories";
 
@@ -115,6 +116,8 @@ export default async function PlacePage({ params }: PlacePageProps) {
               <MapNavButton place={place} />
             </aside>
           </div>
+
+          <ReviewSection placeId={place.id} />
         </section>
       </div>
     </main>
