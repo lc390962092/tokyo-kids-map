@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Star, Send, MessageCircle } from "lucide-react";
 import { createSupabaseClient } from "@/lib/supabase/client";
 
@@ -37,7 +37,7 @@ export function ReviewSection({ placeId }: { placeId: string }) {
     );
   }, [reviews]);
 
-  async function loadReviews() {
+  const loadReviews = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("reviews")
@@ -49,11 +49,11 @@ export function ReviewSection({ placeId }: { placeId: string }) {
       setReviews(data as Review[]);
     }
     setLoading(false);
-  }
+  }, [placeId]);
 
   useEffect(() => {
     loadReviews();
-  }, [placeId]);
+  }, [loadReviews]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
