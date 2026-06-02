@@ -13,6 +13,25 @@ type KidsMapProps = {
 
 const tokyoCenter: [number, number] = [139.781, 35.748];
 
+function createGeoJSON(places: Place[]): GeoJSON.FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: places.map((place) => ({
+      type: "Feature",
+      geometry: {
+        type: "Point",
+        coordinates: [place.longitude, place.latitude],
+      },
+      properties: {
+        id: place.id,
+        name: place.nameZh,
+        category: place.category,
+        free: place.freeEntry,
+      },
+    })),
+  };
+}
+
 export default function KidsMap({ places, selectedPlaceId }: KidsMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
@@ -26,10 +45,11 @@ export default function KidsMap({ places, selectedPlaceId }: KidsMapProps) {
     [places],
   );
 
+  // Initialize map + source + layers (once)
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    mapRef.current = new maplibregl.Map({
+    const map = new maplibregl.Map({
       container: containerRef.current,
       center: tokyoCenter,
       zoom: 11,
@@ -49,41 +69,16 @@ export default function KidsMap({ places, selectedPlaceId }: KidsMapProps) {
       },
     });
 
-    mapRef.current.addControl(
+    mapRef.current = map;
+
+    map.addControl(
       new maplibregl.NavigationControl({ visualizePitch: false }),
       "bottom-right",
     );
 
-    return () => {
-      mapRef.current?.remove();
-      mapRef.current = null;
-    };
-  }, []);
+    map.once("load", () => {
+      const geojson = createGeoJSON(placesRef.current);
 
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    const geojson: GeoJSON.FeatureCollection = {
-      type: "FeatureCollection",
-      features: places.map((place) => ({
-        type: "Feature",
-        geometry: {
-          type: "Point",
-          coordinates: [place.longitude, place.latitude],
-        },
-        properties: {
-          id: place.id,
-          name: place.nameZh,
-          category: place.category,
-          free: place.freeEntry,
-        },
-      })),
-    };
-
-    if (map.getSource("places")) {
-      (map.getSource("places") as maplibregl.GeoJSONSource).setData(geojson);
-    } else {
       map.addSource("places", {
         type: "geojson",
         data: geojson,
@@ -141,84 +136,108 @@ export default function KidsMap({ places, selectedPlaceId }: KidsMapProps) {
         try {
           const zoom = await source.getClusterExpansionZoom(clusterId);
           map.easeTo({
-            center: (feature.geometry as GeoJSON.Point).coordinates as [number, number],
+            center: (feature.geometry as GeoJSON.Point)
+              .coordinates as [number, number],
             zoom: zoom || 14,
           });
         } catch {
           map.easeTo({
-            center: (feature.geometry as GeoJSON.Point).coordinates as [number, number],
+            center: (feature.geometry as GeoJSON.Point)
+              .coordinates as [number, number],
             zoom: 14,
           });
         }
       });
-    }
 
-    const updateMarkers = () => {
-      const currentPlaces = placesRef.current;
-      const features = map.querySourceFeatures("places", {
-        filter: ["!", ["has", "point_count"]],
-      });
+      const updateMarkers = () => {
+        const currentPlaces = placesRef.current;
+        const features = map.querySourceFeatures("places", {
+          filter: ["!", ["has", "point_count"]],
+        });
 
-      markersRef.current.forEach((m) => m.remove());
-      markersRef.current = [];
+        markersRef.current.forEach((m) => m.remove());
+        markersRef.current = [];
 
-      const zoom = map.getZoom();
-      const scale = Math.max(0.55, Math.min(1.2, 0.45 + (zoom - 8) * 0.08));
-      const size = Math.round(44 * scale);
-      const fontSize = Math.max(10, Math.round(16 * scale));
+        const zoom = map.getZoom();
+        const scale = Math.max(
+          0.55,
+          Math.min(1.2, 0.45 + (zoom - 8) * 0.08),
+        );
+        const size = Math.round(44 * scale);
+        const fontSize = Math.max(10, Math.round(16 * scale));
 
-      const uniqueIds = new Set<string>();
-      features.forEach((f) => {
-        const props = f.properties as Record<string, unknown> | undefined;
-        if (!props) return;
-        const id = props.id as string;
-        if (!id || uniqueIds.has(id)) return;
-        uniqueIds.add(id);
+        const uniqueIds = new Set<string>();
+        features.forEach((f) => {
+          const props = f.properties as Record<string, unknown> | undefined;
+          if (!props) return;
+          const id = props.id as string;
+          if (!id || uniqueIds.has(id)) return;
+          uniqueIds.add(id);
 
-        const place = currentPlaces.find((p) => p.id === id);
-        if (!place) return;
+          const place = currentPlaces.find((p) => p.id === id);
+          if (!place) return;
 
-        const markerElement = document.createElement("button");
-        markerElement.type = "button";
-        markerElement.className =
-          "grid place-items-center rounded-full border-2 border-white font-black text-white shadow-lg transition active:scale-95 cursor-pointer";
-        markerElement.style.backgroundColor = getCategoryColor(place.category);
-        markerElement.style.width = `${size}px`;
-        markerElement.style.height = `${size}px`;
-        markerElement.style.fontSize = `${fontSize}px`;
-        markerElement.textContent = place.freeEntry ? "免" : "¥";
+          const markerElement = document.createElement("button");
+          markerElement.type = "button";
+          markerElement.className =
+            "grid place-items-center rounded-full border-2 border-white font-black text-white shadow-lg transition active:scale-95 cursor-pointer";
+          markerElement.style.backgroundColor = getCategoryColor(
+            place.category,
+          );
+          markerElement.style.width = `${size}px`;
+          markerElement.style.height = `${size}px`;
+          markerElement.style.fontSize = `${fontSize}px`;
+          markerElement.textContent = place.freeEntry ? "免" : "¥";
 
-        const popup = new maplibregl.Popup({
-          offset: Math.round(14 * scale),
-          closeButton: true,
-        }).setDOMContent(createPopupContent(place));
+          const popup = new maplibregl.Popup({
+            offset: Math.round(14 * scale),
+            closeButton: true,
+          }).setDOMContent(createPopupContent(place));
 
-        const marker = new maplibregl.Marker({ element: markerElement })
-          .setLngLat([place.longitude, place.latitude])
-          .setPopup(popup)
-          .addTo(map);
+          const marker = new maplibregl.Marker({ element: markerElement })
+            .setLngLat([place.longitude, place.latitude])
+            .setPopup(popup)
+            .addTo(map);
 
-        markersRef.current.push(marker);
-      });
-    };
+          markersRef.current.push(marker);
+        });
+      };
 
-    const handleMoveEnd = () => updateMarkers();
-    const handleData = (e: maplibregl.MapSourceDataEvent) => {
-      if (e.sourceId === "places" && e.isSourceLoaded) updateMarkers();
-    };
+      const handleMoveEnd = () => updateMarkers();
+      const handleData = (e: maplibregl.MapSourceDataEvent) => {
+        if (e.sourceId === "places" && e.isSourceLoaded) updateMarkers();
+      };
 
-    map.on("moveend", handleMoveEnd);
-    map.on("data", handleData);
-    updateMarkers();
+      map.on("moveend", handleMoveEnd);
+      map.on("data", handleData);
+      updateMarkers();
+    });
 
     return () => {
-      map.off("moveend", handleMoveEnd);
-      map.off("data", handleData);
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
+      userMarkerRef.current?.remove();
+      userMarkerRef.current = null;
+      map.remove();
+      mapRef.current = null;
     };
+  }, []);
+
+  // Update source data when places change
+  useEffect(() => {
+    placesRef.current = places;
+    const map = mapRef.current;
+    if (!map) return;
+
+    const source = map.getSource("places") as
+      | maplibregl.GeoJSONSource
+      | undefined;
+    if (source) {
+      source.setData(createGeoJSON(places));
+    }
   }, [places]);
 
+  // Fly to selected place or fit bounds
   useEffect(() => {
     const map = mapRef.current;
     if (!map || places.length === 0) return;
