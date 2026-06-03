@@ -75,8 +75,7 @@ export default function AdminPage() {
     const isNew = !form.id;
     const payload = { ...form };
     if (isNew) {
-      // @ts-expect-error remove id for insert
-      delete payload.id;
+      payload.id = crypto.randomUUID();
       const { error } = await supabase.from("places").insert(payload);
       if (error) {
         alert("保存失败: " + error.message);
