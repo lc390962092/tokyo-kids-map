@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X } from "lucide-react";
+import { X, MapPin } from "lucide-react";
 import { categoryOptions } from "@/data/place-options";
 import type { PlaceRecord } from "@/types/place";
 
@@ -97,11 +97,20 @@ export function PlaceFormModal({ initial, onClose, onSave }: PlaceFormModalProps
               <label className="mb-1 block text-xs font-black text-[#6d5147]">
                 地址
               </label>
-              <input
-                value={form.address}
-                onChange={(e) => update("address", e.target.value)}
-                className="w-full rounded-2xl border border-[#ffe0ce] bg-[#fffaf4] px-3 py-2 text-sm outline-none focus:border-[#ff8c73]"
-              />
+              <div className="flex gap-2">
+                <input
+                  value={form.address}
+                  onChange={(e) => update("address", e.target.value)}
+                  className="flex-1 rounded-2xl border border-[#ffe0ce] bg-[#fffaf4] px-3 py-2 text-sm outline-none focus:border-[#ff8c73]"
+                />
+                <FetchCoordsButton
+                  address={form.address}
+                  onCoords={(lat, lon) => {
+                    update("latitude", lat);
+                    update("longitude", lon);
+                  }}
+                />
+              </div>
             </div>
             <div>
               <label className="mb-1 block text-xs font-black text-[#6d5147]">
@@ -277,5 +286,59 @@ export function PlaceFormModal({ initial, onClose, onSave }: PlaceFormModalProps
         </div>
       </div>
     </div>
+  );
+}
+
+function FetchCoordsButton({
+  address,
+  onCoords,
+}: {
+  address: string;
+  onCoords: (lat: number, lon: number) => void;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  async function handleClick() {
+    if (!address.trim()) {
+      alert("请先输入地址");
+      return;
+    }
+    setLoading(true);
+    try {
+      const q = encodeURIComponent(address.trim());
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`,
+        {
+          headers: {
+            "Accept-Language": "ja",
+          },
+        }
+      );
+      const data = await res.json();
+      if (data && data.length > 0) {
+        const lat = parseFloat(data[0].lat);
+        const lon = parseFloat(data[0].lon);
+        onCoords(lat, lon);
+      } else {
+        alert("未找到该地址的坐标，请手动输入");
+      }
+    } catch {
+      alert("获取坐标失败，请检查网络或手动输入");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={loading}
+      title="根据地址自动获取经纬度"
+      className="inline-flex shrink-0 items-center gap-1 rounded-2xl bg-[#fff0e8] px-3 py-2 text-xs font-bold text-[#ff8c73] transition hover:bg-[#ff8c73] hover:text-white disabled:opacity-50"
+    >
+      <MapPin className="h-3.5 w-3.5" />
+      {loading ? "..." : "定位"}
+    </button>
   );
 }
