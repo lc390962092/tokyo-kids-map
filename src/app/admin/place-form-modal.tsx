@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, MapPin } from "lucide-react";
+import { X, MapPin, ExternalLink } from "lucide-react";
 import { categoryOptions } from "@/data/place-options";
 import type { PlaceRecord } from "@/types/place";
 
@@ -103,6 +103,16 @@ export function PlaceFormModal({ initial, onClose, onSave }: PlaceFormModalProps
                   onChange={(e) => update("address", e.target.value)}
                   className="flex-1 rounded-2xl border border-[#ffe0ce] bg-[#fffaf4] px-3 py-2 text-sm outline-none focus:border-[#ff8c73]"
                 />
+                <a
+                  href={`https://www.google.com/maps/search/${encodeURIComponent(form.address || "東京")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="在 Google Maps 搜索"
+                  className="inline-flex shrink-0 items-center gap-1 rounded-2xl bg-[#e8f4e8] px-3 py-2 text-xs font-bold text-[#4a8c4a] transition hover:bg-[#4a8c4a] hover:text-white"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  搜索
+                </a>
                 <FetchCoordsButton
                   address={form.address}
                   onCoords={(lat, lon) => {

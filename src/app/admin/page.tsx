@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { createSupabaseClient } from "@/lib/supabase/client";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, LogOut } from "lucide-react";
 import { categoryOptions } from "@/data/place-options";
 import type { PlaceRecord } from "@/types/place";
 import { PlaceFormModal } from "./place-form-modal";
@@ -118,13 +118,22 @@ export default function AdminPage() {
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <h1 className="text-2xl font-black text-[#2c3834]">地点管理后台</h1>
-          <button
-            onClick={() => setEditing({ ...emptyForm })}
-            className="inline-flex items-center gap-2 rounded-full bg-[#ff8c73] px-5 py-2.5 text-sm font-black text-white shadow-md transition hover:bg-[#ff7a5c]"
-          >
-            <Plus className="h-4 w-4" />
-            新增地点
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setEditing({ ...emptyForm })}
+              className="inline-flex items-center gap-2 rounded-full bg-[#ff8c73] px-5 py-2.5 text-sm font-black text-white shadow-md transition hover:bg-[#ff7a5c]"
+            >
+              <Plus className="h-4 w-4" />
+              新增地点
+            </button>
+            <button
+              onClick={() => supabase.auth.signOut()}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#fff0e8] text-[#76584e] shadow md:hidden"
+              title="退出"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         <input
