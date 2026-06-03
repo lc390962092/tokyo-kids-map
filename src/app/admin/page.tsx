@@ -113,7 +113,7 @@ export default function AdminPage() {
   if (role !== "admin") return null;
 
   return (
-    <main className="min-h-screen bg-[#fffaf4] px-4 py-6 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[#fffaf4] px-4 pb-6 pt-14 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <h1 className="text-2xl font-black text-[#2c3834]">地点管理后台</h1>
