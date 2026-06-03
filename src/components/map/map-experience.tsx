@@ -2,7 +2,17 @@
 
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
-import { ListFilter, MapPin, X, LogIn, LogOut, Shield, UsersRound, Plus } from "lucide-react";
+import {
+  ListFilter,
+  MapPin,
+  X,
+  LogIn,
+  LogOut,
+  Shield,
+  UsersRound,
+  Plus,
+  Menu,
+} from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { createSupabaseClient } from "@/lib/supabase/client";
@@ -32,8 +42,11 @@ export function MapExperience({ places }: MapExperienceProps) {
   const [filters, setFilters] = useState<PlaceFilters>(defaultFilters);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [showPlaydates, setShowPlaydates] = useState(true);
-  const [selectedPlaydate, setSelectedPlaydate] = useState<Playdate | null>(null);
+  const [selectedPlaydate, setSelectedPlaydate] = useState<Playdate | null>(
+    null,
+  );
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, role } = useAuth();
 
   const filteredPlaces = useMemo(
@@ -71,61 +84,6 @@ export function MapExperience({ places }: MapExperienceProps) {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setShowPlaydates((v) => !v)}
-                className={`inline-flex h-9 w-9 items-center justify-center rounded-full shadow ${
-                  showPlaydates
-                    ? "bg-[#ff8c73] text-white"
-                    : "bg-[#fff0e8] text-[#ff8c73]"
-                }`}
-                title={showPlaydates ? "隐藏约伴" : "显示约伴"}
-              >
-                <UsersRound className="h-4 w-4" />
-              </button>
-              {user ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setIsCreateOpen(true)}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#e8f4e8] text-[#4a8c4a] shadow"
-                    title="发起约伴"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
-                  {role === "admin" && (
-                    <Link
-                      href="/admin"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#ff8c73] text-white shadow"
-                      title="管理后台"
-                    >
-                      <Shield className="h-4 w-4" />
-                    </Link>
-                  )}
-                  <Link
-                    href="/member"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#fff0e8] text-[#76584e] shadow"
-                    title="会员中心"
-                  >
-                    <UsersRound className="h-4 w-4" />
-                  </Link>
-                  <button
-                    onClick={() => supabase.auth.signOut()}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#fff0e8] text-[#76584e] shadow"
-                    title="退出"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </button>
-                </>
-              ) : (
-                <Link
-                  href="/login"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#fff0e8] text-[#76584e] shadow"
-                  title="登录"
-                >
-                  <LogIn className="h-4 w-4" />
-                </Link>
-              )}
-              <button
-                type="button"
                 onClick={() => setIsFilterOpen(true)}
                 className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#ff8c73] text-white shadow-md"
                 aria-label="打开筛选"
@@ -133,6 +91,82 @@ export function MapExperience({ places }: MapExperienceProps) {
               >
                 <ListFilter className="h-5 w-5" />
               </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsMenuOpen((v) => !v)}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#76584e] shadow-md"
+                  aria-label="更多"
+                  title="更多"
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
+                {isMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-48 overflow-hidden rounded-2xl border border-[#ffe0ce] bg-white p-2 shadow-xl">
+                    <MobileMenuItem
+                      icon={
+                        <UsersRound
+                          className={`h-4 w-4 ${showPlaydates ? "text-[#ff8c73]" : "text-[#c4a99b]"}`}
+                        />
+                      }
+                      label={showPlaydates ? "隐藏约伴" : "显示约伴"}
+                      onClick={() => {
+                        setShowPlaydates((v) => !v);
+                        setIsMenuOpen(false);
+                      }}
+                    />
+                    {user ? (
+                      <>
+                        <MobileMenuItem
+                          icon={<Plus className="h-4 w-4 text-[#4a8c4a]" />}
+                          label="发起约伴"
+                          onClick={() => {
+                            setIsCreateOpen(true);
+                            setIsMenuOpen(false);
+                          }}
+                        />
+                        <MobileMenuItem
+                          icon={
+                            <UsersRound className="h-4 w-4 text-[#76584e]" />
+                          }
+                          label="会员中心"
+                          href="/member"
+                          onClick={() => setIsMenuOpen(false)}
+                        />
+                        {role === "admin" && (
+                          <MobileMenuItem
+                            icon={
+                              <Shield className="h-4 w-4 text-[#ff8c73]" />
+                            }
+                            label="管理后台"
+                            href="/admin"
+                            onClick={() => setIsMenuOpen(false)}
+                          />
+                        )}
+                        <MobileMenuItem
+                          icon={
+                            <LogOut className="h-4 w-4 text-[#76584e]" />
+                          }
+                          label="退出登录"
+                          onClick={() => {
+                            supabase.auth.signOut();
+                            setIsMenuOpen(false);
+                          }}
+                        />
+                      </>
+                    ) : (
+                      <MobileMenuItem
+                        icon={
+                          <LogIn className="h-4 w-4 text-[#76584e]" />
+                        }
+                        label="登录"
+                        href="/login"
+                        onClick={() => setIsMenuOpen(false)}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -188,5 +222,36 @@ export function MapExperience({ places }: MapExperienceProps) {
         </div>
       ) : null}
     </main>
+  );
+}
+
+function MobileMenuItem({
+  icon,
+  label,
+  onClick,
+  href,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick?: () => void;
+  href?: string;
+}) {
+  const className =
+    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-[#2c3834] transition hover:bg-[#fffaf4]";
+
+  if (href) {
+    return (
+      <Link href={href} className={className} onClick={onClick}>
+        {icon}
+        {label}
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" className={className} onClick={onClick}>
+      {icon}
+      {label}
+    </button>
   );
 }
