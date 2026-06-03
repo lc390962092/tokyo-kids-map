@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogIn, LogOut, Shield } from "lucide-react";
+import { LogIn, LogOut, Shield, UsersRound } from "lucide-react";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { createSupabaseClient } from "@/lib/supabase/client";
 
@@ -29,6 +29,14 @@ export function TopNav() {
               管理
             </Link>
           )}
+          <Link
+            href="/member"
+            className="flex items-center gap-1 rounded-full bg-[#fff0e8] px-3 py-1 text-xs font-bold text-[#76584e] transition hover:bg-[#ffe0ce]"
+            title="会员中心"
+          >
+            <UsersRound className="h-3 w-3" />
+            会员
+          </Link>
           <span className="hidden max-w-[120px] truncate text-xs font-bold text-[#2c3834] sm:inline">
             {user.email?.split("@")[0]}
           </span>

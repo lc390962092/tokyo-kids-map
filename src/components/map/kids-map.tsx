@@ -4,11 +4,15 @@ import { useEffect, useMemo, useRef } from "react";
 import maplibregl, { type Map, type Marker } from "maplibre-gl";
 import { Crosshair } from "lucide-react";
 import { getCategoryColor, getCategoryLabel } from "@/data/place-options";
+import { PlaydateLayer } from "@/components/playdate/playdate-layer";
 import type { Place } from "@/types/place";
+import type { Playdate } from "@/types/playdate";
 
 type KidsMapProps = {
   places: Place[];
   selectedPlaceId?: string;
+  showPlaydates?: boolean;
+  onSelectPlaydate?: (playdate: Playdate) => void;
 };
 
 const tokyoCenter: [number, number] = [139.781, 35.748];
@@ -32,7 +36,12 @@ function createGeoJSON(places: Place[]): GeoJSON.FeatureCollection {
   };
 }
 
-export default function KidsMap({ places, selectedPlaceId }: KidsMapProps) {
+export default function KidsMap({
+  places,
+  selectedPlaceId,
+  showPlaydates = false,
+  onSelectPlaydate,
+}: KidsMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
   const markersRef = useRef<Marker[]>([]);
@@ -313,6 +322,13 @@ export default function KidsMap({ places, selectedPlaceId }: KidsMapProps) {
       >
         <Crosshair className="h-5 w-5" />
       </button>
+      {mapRef.current && showPlaydates && (
+        <PlaydateLayer
+          map={mapRef.current}
+          visible={showPlaydates}
+          onSelect={(p) => onSelectPlaydate?.(p)}
+        />
+      )}
     </div>
   );
 }

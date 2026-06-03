@@ -2,13 +2,16 @@
 
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
-import { ListFilter, MapPin, X, LogIn, LogOut, Shield } from "lucide-react";
+import { ListFilter, MapPin, X, LogIn, LogOut, Shield, UsersRound, Plus } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { PlaceFilterPanel } from "@/components/filters/place-filter-panel";
 import { filterPlaces, defaultFilters } from "@/lib/place-filters";
 import type { Place, PlaceFilters } from "@/types/place";
+import type { Playdate } from "@/types/playdate";
+import { PlaydateFormModal } from "@/components/playdate/playdate-form-modal";
+import { PlaydateDetailModal } from "@/components/playdate/playdate-detail-modal";
 
 const supabase = createSupabaseClient();
 
@@ -28,6 +31,9 @@ type MapExperienceProps = {
 export function MapExperience({ places }: MapExperienceProps) {
   const [filters, setFilters] = useState<PlaceFilters>(defaultFilters);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [showPlaydates, setShowPlaydates] = useState(true);
+  const [selectedPlaydate, setSelectedPlaydate] = useState<Playdate | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const { user, role } = useAuth();
 
   const filteredPlaces = useMemo(
@@ -47,7 +53,11 @@ export function MapExperience({ places }: MapExperienceProps) {
         </div>
 
         <section className="relative h-full">
-          <KidsMap places={filteredPlaces} />
+          <KidsMap
+            places={filteredPlaces}
+            showPlaydates={showPlaydates}
+            onSelectPlaydate={setSelectedPlaydate}
+          />
 
           <div className="absolute left-4 right-4 top-4 z-10 flex items-center justify-between gap-3 rounded-3xl border border-white/70 bg-white/90 px-4 py-3 shadow-lg backdrop-blur md:hidden">
             <div>
@@ -59,8 +69,28 @@ export function MapExperience({ places }: MapExperienceProps) {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowPlaydates((v) => !v)}
+                className={`inline-flex h-9 w-9 items-center justify-center rounded-full shadow ${
+                  showPlaydates
+                    ? "bg-[#ff8c73] text-white"
+                    : "bg-[#fff0e8] text-[#ff8c73]"
+                }`}
+                title={showPlaydates ? "隐藏约伴" : "显示约伴"}
+              >
+                <UsersRound className="h-4 w-4" />
+              </button>
               {user ? (
                 <>
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateOpen(true)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#e8f4e8] text-[#4a8c4a] shadow"
+                    title="发起约伴"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
                   {role === "admin" && (
                     <Link
                       href="/admin"
@@ -70,6 +100,13 @@ export function MapExperience({ places }: MapExperienceProps) {
                       <Shield className="h-4 w-4" />
                     </Link>
                   )}
+                  <Link
+                    href="/member"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#fff0e8] text-[#76584e] shadow"
+                    title="会员中心"
+                  >
+                    <UsersRound className="h-4 w-4" />
+                  </Link>
                   <button
                     onClick={() => supabase.auth.signOut()}
                     className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#fff0e8] text-[#76584e] shadow"
@@ -112,6 +149,21 @@ export function MapExperience({ places }: MapExperienceProps) {
           ) : null}
         </section>
       </div>
+
+      {selectedPlaydate && (
+        <PlaydateDetailModal
+          playdateId={selectedPlaydate.id}
+          onClose={() => setSelectedPlaydate(null)}
+        />
+      )}
+
+      {isCreateOpen && (
+        <PlaydateFormModal
+          places={places}
+          onClose={() => setIsCreateOpen(false)}
+          onSuccess={() => setIsCreateOpen(false)}
+        />
+      )}
 
       {isFilterOpen ? (
         <div className="fixed inset-0 z-30 bg-black/30 md:hidden">
