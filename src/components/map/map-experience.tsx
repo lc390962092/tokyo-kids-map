@@ -2,10 +2,15 @@
 
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
-import { ListFilter, MapPin, X } from "lucide-react";
+import { ListFilter, MapPin, X, LogIn, LogOut, Shield } from "lucide-react";
+import Link from "next/link";
+import { useAuth } from "@/lib/supabase/auth-context";
+import { createSupabaseClient } from "@/lib/supabase/client";
 import { PlaceFilterPanel } from "@/components/filters/place-filter-panel";
 import { filterPlaces, defaultFilters } from "@/lib/place-filters";
 import type { Place, PlaceFilters } from "@/types/place";
+
+const supabase = createSupabaseClient();
 
 const KidsMap = dynamic(() => import("@/components/map/kids-map"), {
   ssr: false,
@@ -23,6 +28,7 @@ type MapExperienceProps = {
 export function MapExperience({ places }: MapExperienceProps) {
   const [filters, setFilters] = useState<PlaceFilters>(defaultFilters);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const { user, role } = useAuth();
 
   const filteredPlaces = useMemo(
     () => filterPlaces(places, filters),
@@ -52,15 +58,45 @@ export function MapExperience({ places }: MapExperienceProps) {
                 Tokyo Kids Map · {filteredPlaces.length} 个地点
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsFilterOpen(true)}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#ff8c73] text-white shadow-md"
-              aria-label="打开筛选"
-              title="筛选"
-            >
-              <ListFilter className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {user ? (
+                <>
+                  {role === "admin" && (
+                    <Link
+                      href="/admin"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#ff8c73] text-white shadow"
+                      title="管理后台"
+                    >
+                      <Shield className="h-4 w-4" />
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => supabase.auth.signOut()}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#fff0e8] text-[#76584e] shadow"
+                    title="退出"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#fff0e8] text-[#76584e] shadow"
+                  title="登录"
+                >
+                  <LogIn className="h-4 w-4" />
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsFilterOpen(true)}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#ff8c73] text-white shadow-md"
+                aria-label="打开筛选"
+                title="筛选"
+              >
+                <ListFilter className="h-5 w-5" />
+              </button>
+            </div>
           </div>
 
           {filteredPlaces.length === 0 ? (

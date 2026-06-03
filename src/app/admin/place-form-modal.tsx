@@ -132,6 +132,25 @@ export function PlaceFormModal({ initial, onClose, onSave }: PlaceFormModalProps
                 className="w-full rounded-2xl border border-[#ffe0ce] bg-[#fffaf4] px-3 py-2 text-sm outline-none focus:border-[#ff8c73]"
               />
             </div>
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-xs font-black text-[#6d5147]">
+                Google Maps 链接（粘贴后自动解析坐标）
+              </label>
+              <input
+                placeholder="https://www.google.com/maps/place/..."
+                onChange={(e) => {
+                  const coords = parseGoogleMapsUrl(e.target.value);
+                  if (coords) {
+                    update("latitude", coords.lat);
+                    update("longitude", coords.lon);
+                  }
+                }}
+                className="w-full rounded-2xl border border-[#ffe0ce] bg-[#fffaf4] px-3 py-2 text-sm outline-none focus:border-[#ff8c73]"
+              />
+              <p className="mt-1 text-[10px] font-bold text-[#c4a99b]">
+                提示：在 Google Maps 搜索地点 → 右键点击地图 → 「复制坐标」→ 粘贴到上方；或粘贴分享链接
+              </p>
+            </div>
             <div>
               <label className="mb-1 block text-xs font-black text-[#6d5147]">
                 纬度
@@ -287,6 +306,20 @@ export function PlaceFormModal({ initial, onClose, onSave }: PlaceFormModalProps
       </div>
     </div>
   );
+}
+
+function parseGoogleMapsUrl(url: string): { lat: number; lon: number } | null {
+  // @lat,lng 格式
+  const atMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (atMatch) {
+    return { lat: parseFloat(atMatch[1]), lon: parseFloat(atMatch[2]) };
+  }
+  // ?q=lat,lng 格式
+  const qMatch = url.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (qMatch) {
+    return { lat: parseFloat(qMatch[1]), lon: parseFloat(qMatch[2]) };
+  }
+  return null;
 }
 
 function FetchCoordsButton({

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { LogIn, LogOut, Shield } from "lucide-react";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { createSupabaseClient } from "@/lib/supabase/client";
@@ -9,9 +10,14 @@ const supabase = createSupabaseClient();
 
 export function TopNav() {
   const { user, role } = useAuth();
+  const pathname = usePathname();
+  const isHome = pathname === "/";
+
+  // 首页移动端：顶部工具栏已整合登录按钮，这里隐藏避免重叠
+  const mobileClass = isHome ? "hidden md:block" : "block";
 
   return (
-    <div className="fixed right-4 top-4 z-50 max-w-fit">
+    <div className={`fixed right-4 top-4 z-50 max-w-fit ${mobileClass}`}>
       {user ? (
         <div className="flex items-center gap-2 rounded-full bg-white/90 px-3 py-2 shadow backdrop-blur">
           {role === "admin" && (
