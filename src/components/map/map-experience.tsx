@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import {
-  ListFilter,
+  Search,
   MapPin,
   X,
   LogIn,
@@ -89,7 +89,7 @@ export function MapExperience({ places }: MapExperienceProps) {
                 aria-label="打开筛选"
                 title="筛选"
               >
-                <ListFilter className="h-5 w-5" />
+                <Search className="h-5 w-5" />
               </button>
               <div className="relative">
                 <button
