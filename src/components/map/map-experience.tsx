@@ -47,6 +47,7 @@ export function MapExperience({ places }: MapExperienceProps) {
   );
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [createFromPlaceId, setCreateFromPlaceId] = useState<string | undefined>();
   const { user, role } = useAuth();
 
   const filteredPlaces = useMemo(
@@ -70,6 +71,10 @@ export function MapExperience({ places }: MapExperienceProps) {
             places={filteredPlaces}
             showPlaydates={showPlaydates}
             onSelectPlaydate={setSelectedPlaydate}
+            onCreatePlaydateFromPlace={(place) => {
+              setCreateFromPlaceId(place.id);
+              setIsCreateOpen(true);
+            }}
           />
 
           <div className="absolute left-4 right-4 top-4 z-10 flex items-center justify-between gap-3 rounded-3xl border border-white/70 bg-white/90 px-4 py-3 shadow-lg backdrop-blur md:hidden">
@@ -194,8 +199,15 @@ export function MapExperience({ places }: MapExperienceProps) {
       {isCreateOpen && (
         <PlaydateFormModal
           places={places}
-          onClose={() => setIsCreateOpen(false)}
-          onSuccess={() => setIsCreateOpen(false)}
+          defaultPlaceId={createFromPlaceId}
+          onClose={() => {
+            setIsCreateOpen(false);
+            setCreateFromPlaceId(undefined);
+          }}
+          onSuccess={() => {
+            setIsCreateOpen(false);
+            setCreateFromPlaceId(undefined);
+          }}
         />
       )}
 

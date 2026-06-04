@@ -13,6 +13,7 @@ type KidsMapProps = {
   selectedPlaceId?: string;
   showPlaydates?: boolean;
   onSelectPlaydate?: (playdate: Playdate) => void;
+  onCreatePlaydateFromPlace?: (place: Place) => void;
 };
 
 const tokyoCenter: [number, number] = [139.781, 35.748];
@@ -41,6 +42,7 @@ export default function KidsMap({
   selectedPlaceId,
   showPlaydates = false,
   onSelectPlaydate,
+  onCreatePlaydateFromPlace,
 }: KidsMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
@@ -48,6 +50,8 @@ export default function KidsMap({
   const userMarkerRef = useRef<Marker | null>(null);
   const placesRef = useRef(places);
   placesRef.current = places;
+  const onCreatePlaydateRef = useRef(onCreatePlaydateFromPlace);
+  onCreatePlaydateRef.current = onCreatePlaydateFromPlace;
 
   const boundsKey = useMemo(
     () => places.map((place) => place.id).join(":"),
@@ -201,7 +205,7 @@ export default function KidsMap({
           const popup = new maplibregl.Popup({
             offset: Math.round(14 * scale),
             closeButton: true,
-          }).setDOMContent(createPopupContent(place));
+          }).setDOMContent(createPopupContent(place, onCreatePlaydateRef.current));
 
           const marker = new maplibregl.Marker({ element: markerElement })
             .setLngLat([place.longitude, place.latitude])
@@ -333,7 +337,10 @@ export default function KidsMap({
   );
 }
 
-function createPopupContent(place: Place) {
+function createPopupContent(
+  place: Place,
+  onCreatePlaydate?: (place: Place) => void,
+) {
   const popupContent = document.createElement("div");
   popupContent.className = "w-64 overflow-hidden rounded-[18px] bg-white";
 
@@ -360,13 +367,31 @@ function createPopupContent(place: Place) {
   age.className = "text-sm font-semibold text-[#5a7068]";
   age.textContent = `推荐 ${place.ageMin}-${place.ageMax} 岁`;
 
+  const actions = document.createElement("div");
+  actions.className = "flex gap-2";
+
   const link = document.createElement("a");
   link.className =
     "inline-flex items-center gap-1 rounded-full bg-[#ff8c73] px-4 py-2 text-sm font-bold text-white";
   link.href = `/place/${place.id}`;
   link.textContent = "查看详情";
+  actions.append(link);
 
-  body.append(meta, title, subtitle, age, link);
+  if (onCreatePlaydate) {
+    const playdateBtn = document.createElement("button");
+    playdateBtn.type = "button";
+    playdateBtn.className =
+      "inline-flex items-center gap-1 rounded-full border border-[#ff8c73] bg-white px-3 py-2 text-sm font-bold text-[#ff8c73]";
+    playdateBtn.textContent = "发起约伴";
+    playdateBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onCreatePlaydate(place);
+    });
+    actions.append(playdateBtn);
+  }
+
+  body.append(meta, title, subtitle, age, actions);
   popupContent.append(image, body);
 
   return popupContent;

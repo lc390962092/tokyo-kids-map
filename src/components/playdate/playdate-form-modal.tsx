@@ -20,6 +20,7 @@ function parseGoogleMapsUrl(url: string): { lat: number; lon: number } | null {
 type PlaydateFormModalProps = {
   places: Place[];
   defaultCenter?: { latitude: number; longitude: number };
+  defaultPlaceId?: string;
   onClose: () => void;
   onSuccess: () => void;
 };
@@ -27,15 +28,16 @@ type PlaydateFormModalProps = {
 export function PlaydateFormModal({
   places,
   defaultCenter,
+  defaultPlaceId,
   onClose,
   onSuccess,
 }: PlaydateFormModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [meetAt, setMeetAt] = useState("");
-  const [placeId, setPlaceId] = useState("");
-  const [latitude, setLatitude] = useState(defaultCenter?.latitude ?? 35.6812);
-  const [longitude, setLongitude] = useState(defaultCenter?.longitude ?? 139.7671);
+  const [placeId, setPlaceId] = useState(defaultPlaceId ?? "");
+  const [latitude, setLatitude] = useState(defaultCenter?.latitude ?? 35.748);
+  const [longitude, setLongitude] = useState(defaultCenter?.longitude ?? 139.781);
   const [address, setAddress] = useState("");
   const [maxParticipants, setMaxParticipants] = useState(5);
   const [radius, setRadius] = useState(3000);
