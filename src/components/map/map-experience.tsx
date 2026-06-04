@@ -48,6 +48,7 @@ export function MapExperience({ places }: MapExperienceProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [createFromPlaceId, setCreateFromPlaceId] = useState<string | undefined>();
+  const [nearbyPlaydates, setNearbyPlaydates] = useState<Playdate[]>([]);
   const { user, role } = useAuth();
 
   const filteredPlaces = useMemo(
@@ -63,6 +64,8 @@ export function MapExperience({ places }: MapExperienceProps) {
             filters={filters}
             onChange={setFilters}
             resultCount={filteredPlaces.length}
+            nearbyPlaydates={nearbyPlaydates}
+            onSelectPlaydate={setSelectedPlaydate}
           />
         </div>
 
@@ -75,6 +78,7 @@ export function MapExperience({ places }: MapExperienceProps) {
               setCreateFromPlaceId(place.id);
               setIsCreateOpen(true);
             }}
+            onPlaydatesLoaded={setNearbyPlaydates}
           />
 
           <div className="absolute left-4 right-4 top-4 z-10 flex items-center justify-between gap-3 rounded-3xl border border-white/70 bg-white/90 px-4 py-3 shadow-lg backdrop-blur md:hidden">

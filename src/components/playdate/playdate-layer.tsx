@@ -10,6 +10,7 @@ type PlaydateLayerProps = {
   map: Map;
   visible: boolean;
   onSelect: (playdate: Playdate) => void;
+  onPlaydatesLoaded?: (playdates: Playdate[]) => void;
   radiusMeters?: number;
 };
 
@@ -17,6 +18,7 @@ export function PlaydateLayer({
   map,
   visible,
   onSelect,
+  onPlaydatesLoaded,
   radiusMeters = 3000,
 }: PlaydateLayerProps) {
   const markersRef = useRef<Marker[]>([]);
@@ -44,6 +46,8 @@ export function PlaydateLayer({
       markersRef.current = [];
 
       // Add new markers
+      onPlaydatesLoaded?.(playdates);
+
       playdates.forEach((p) => {
         const marker = createPlaydateMarker({
           map,

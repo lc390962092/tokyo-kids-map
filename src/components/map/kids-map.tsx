@@ -14,6 +14,7 @@ type KidsMapProps = {
   showPlaydates?: boolean;
   onSelectPlaydate?: (playdate: Playdate) => void;
   onCreatePlaydateFromPlace?: (place: Place) => void;
+  onPlaydatesLoaded?: (playdates: Playdate[]) => void;
 };
 
 const tokyoCenter: [number, number] = [139.781, 35.748];
@@ -43,6 +44,7 @@ export default function KidsMap({
   showPlaydates = false,
   onSelectPlaydate,
   onCreatePlaydateFromPlace,
+  onPlaydatesLoaded,
 }: KidsMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
@@ -331,6 +333,7 @@ export default function KidsMap({
           map={mapRef.current}
           visible={showPlaydates}
           onSelect={(p) => onSelectPlaydate?.(p)}
+          onPlaydatesLoaded={onPlaydatesLoaded}
         />
       )}
     </div>

@@ -1,20 +1,25 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { RotateCcw, SlidersHorizontal } from "lucide-react";
+import { RotateCcw, SlidersHorizontal, Calendar, MapPin } from "lucide-react";
 import { ageOptions, categoryOptions, featureOptions } from "@/data/place-options";
 import type { PlaceCategory, PlaceFeature, PlaceFilters } from "@/types/place";
+import type { Playdate } from "@/types/playdate";
 
 type PlaceFilterPanelProps = {
   filters: PlaceFilters;
   onChange: (filters: PlaceFilters) => void;
   resultCount: number;
+  nearbyPlaydates?: Playdate[];
+  onSelectPlaydate?: (playdate: Playdate) => void;
 };
 
 export function PlaceFilterPanel({
   filters,
   onChange,
   resultCount,
+  nearbyPlaydates = [],
+  onSelectPlaydate,
 }: PlaceFilterPanelProps) {
   const toggleCategory = (category: PlaceCategory) => {
     onChange({
@@ -124,6 +129,46 @@ export function PlaceFilterPanel({
               />
             </label>
           ))}
+        </div>
+      </FilterSection>
+
+      <FilterSection title={`附近约伴 (${nearbyPlaydates.length})`}>
+        <div className="space-y-2">
+          {nearbyPlaydates.length === 0 && (
+            <p className="text-sm text-[#c4a99b]">当前范围暂无约伴</p>
+          )}
+          {nearbyPlaydates.slice(0, 5).map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => onSelectPlaydate?.(p)}
+              className="w-full rounded-2xl border border-[#ffe0ce] bg-white p-3 text-left transition hover:bg-[#fffaf4]"
+            >
+              <div className="text-sm font-black text-[#2c3834] line-clamp-1">
+                {p.title}
+              </div>
+              <div className="mt-1 flex items-center gap-2 text-xs text-[#76584e]">
+                <span className="inline-flex items-center gap-1">
+                  <Calendar className="h-3 w-3 text-[#ff8c73]" />
+                  {new Date(p.meet_at).toLocaleString("zh-CN", {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <MapPin className="h-3 w-3 text-[#ff8c73]" />
+                  {p.latitude.toFixed(3)}, {p.longitude.toFixed(3)}
+                </span>
+              </div>
+            </button>
+          ))}
+          {nearbyPlaydates.length > 5 && (
+            <p className="text-center text-xs text-[#c4a99b]">
+              还有 {nearbyPlaydates.length - 5} 个约伴...
+            </p>
+          )}
         </div>
       </FilterSection>
     </aside>
