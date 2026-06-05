@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { X, MapPin, ExternalLink } from "lucide-react";
+import { X, ExternalLink, Upload, MapPin } from "lucide-react";
+import { createSupabaseClient } from "@/lib/supabase/client";
 import { categoryOptions } from "@/data/place-options";
 import type { PlaceRecord } from "@/types/place";
 
@@ -11,8 +12,11 @@ type PlaceFormModalProps = {
   onSave: (form: PlaceRecord) => void;
 };
 
+const supabase = createSupabaseClient();
+
 export function PlaceFormModal({ initial, onClose, onSave }: PlaceFormModalProps) {
   const [form, setForm] = useState<PlaceRecord>({ ...initial });
+  const [uploading, setUploading] = useState(false);
 
   const update = <K extends keyof PlaceRecord>(key: K, value: PlaceRecord[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -132,15 +136,60 @@ export function PlaceFormModal({ initial, onClose, onSave }: PlaceFormModalProps
                 className="w-full rounded-2xl border border-[#ffe0ce] bg-[#fffaf4] px-3 py-2 text-sm outline-none focus:border-[#ff8c73]"
               />
             </div>
-            <div>
+            <div className="sm:col-span-2">
               <label className="mb-1 block text-xs font-black text-[#6d5147]">
-                图片URL
+                图片
               </label>
-              <input
-                value={form.image_url}
-                onChange={(e) => update("image_url", e.target.value)}
-                className="w-full rounded-2xl border border-[#ffe0ce] bg-[#fffaf4] px-3 py-2 text-sm outline-none focus:border-[#ff8c73]"
-              />
+              <div className="flex gap-2">
+                <input
+                  value={form.image_url}
+                  onChange={(e) => update("image_url", e.target.value)}
+                  placeholder="图片 URL 或上传后自动填入"
+                  className="flex-1 rounded-2xl border border-[#ffe0ce] bg-[#fffaf4] px-3 py-2 text-sm outline-none focus:border-[#ff8c73]"
+                />
+                <label className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-2xl bg-[#e8f0ff] px-3 py-2 text-xs font-bold text-[#4a7cc7] transition hover:bg-[#4a7cc7] hover:text-white">
+                  <Upload className="h-3.5 w-3.5" />
+                  {uploading ? "上传中..." : "上传"}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploading(true);
+                      const folder = form.id || crypto.randomUUID();
+                      const ext = file.name.split(".").pop() || "jpg";
+                      const path = `${folder}/${Date.now()}.${ext}`;
+                      const { data: upData, error: upError } = await supabase.storage
+                        .from("place-images")
+                        .upload(path, file, { upsert: true });
+                      if (upError) {
+                        alert("上传失败: " + upError.message);
+                        setUploading(false);
+                        return;
+                      }
+                      const { data: urlData } = supabase.storage
+                        .from("place-images")
+                        .getPublicUrl(upData.path);
+                      update("image_url", urlData.publicUrl);
+                      setUploading(false);
+                    }}
+                  />
+                </label>
+              </div>
+              {form.image_url && (
+                <div className="mt-2 overflow-hidden rounded-xl border border-[#ffe0ce]">
+                  <img
+                    src={form.image_url}
+                    alt="preview"
+                    className="h-24 w-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                </div>
+              )}
             </div>
             <div className="sm:col-span-2">
               <label className="mb-1 block text-xs font-black text-[#6d5147]">
