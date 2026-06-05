@@ -70,11 +70,18 @@ export async function updatePlaydate(
 }
 
 export async function cancelPlaydate(id: string): Promise<{ error?: Error }> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("playdates")
     .update({ status: "cancelled" })
-    .eq("id", id);
+    .eq("id", id)
+    .select();
+
+  console.log("[cancelPlaydate] result", { id, data, error });
+
   if (error) return { error: new Error(error.message) };
+  if (!data || data.length === 0) {
+    return { error: new Error("取消失败，请刷新页面重试") };
+  }
   return {};
 }
 

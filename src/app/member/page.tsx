@@ -62,11 +62,11 @@ export default function MemberPage() {
         <section className="mt-6">
           <h2 className="text-lg font-black text-[#2c3834]">我发起的邀约</h2>
           <div className="mt-3 space-y-3">
-            {created.filter((p) => new Date(p.meet_at) >= now).length === 0 && (
+            {created.filter((p) => new Date(p.meet_at) >= now && p.status !== "cancelled").length === 0 && (
               <p className="text-sm text-[#c4a99b]">没有进行中的邀约</p>
             )}
             {created
-              .filter((p) => new Date(p.meet_at) >= now)
+              .filter((p) => new Date(p.meet_at) >= now && p.status !== "cancelled")
               .map((p) => (
                 <PlaydateCard
                   key={p.id}
@@ -112,6 +112,7 @@ function PlaydateCard({
 }) {
   const goingCount = playdate.responses.filter((r) => r.status === "going").length;
   const isExpired = new Date(playdate.meet_at) < new Date();
+  const isCancelled = playdate.status === "cancelled";
 
   async function handleCancelCreated() {
     if (!confirm("确定取消这个邀约吗？")) return;
@@ -138,11 +139,15 @@ function PlaydateCard({
             {playdate.description || "暂无说明"}
           </p>
         </div>
-        {isExpired && (
+        {isCancelled ? (
+          <span className="shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-400">
+            已取消
+          </span>
+        ) : isExpired ? (
           <span className="shrink-0 rounded-full bg-[#f0f0f0] px-2 py-0.5 text-[10px] font-bold text-[#999]">
             已过期
           </span>
-        )}
+        ) : null}
       </div>
 
       <div className="mt-3 flex flex-wrap gap-3 text-xs font-bold text-[#5f6d68]">
@@ -170,11 +175,11 @@ function PlaydateCard({
           <button
             type="button"
             onClick={handleCancelCreated}
-            disabled={isExpired}
+            disabled={isExpired || isCancelled}
             className="inline-flex items-center gap-1 rounded-full bg-red-50 px-3 py-1.5 text-xs font-bold text-red-500 transition hover:bg-red-100 disabled:opacity-50"
           >
             <X className="h-3 w-3" />
-            取消邀约
+            {isCancelled ? "已取消" : "取消邀约"}
           </button>
         ) : (
           <button
