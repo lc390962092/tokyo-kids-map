@@ -12,7 +12,7 @@ export async function fetchNearbyPlaydates(
   const { data, error } = await supabase.rpc("nearby_playdates", {
     lat,
     lon,
-    radius_meters: radiusMeters,
+    _radius_meters: radiusMeters,
   });
   console.log("[fetchNearbyPlaydates] result", { data, error });
   if (error) {

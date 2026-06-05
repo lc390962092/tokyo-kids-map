@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS playdate_responses (
 CREATE OR REPLACE FUNCTION nearby_playdates(
   lat DOUBLE PRECISION,
   lon DOUBLE PRECISION,
-  radius_meters DOUBLE PRECISION
+  _radius_meters DOUBLE PRECISION
 ) RETURNS SETOF playdates AS $$
 BEGIN
   RETURN QUERY
@@ -49,7 +49,7 @@ BEGIN
           sin(radians(lat)) * sin(radians(p.latitude))
         ))
       )
-    ) <= radius_meters
+    ) <= _radius_meters
   ORDER BY p.meet_at ASC;
 END;
 $$ LANGUAGE plpgsql STABLE;
