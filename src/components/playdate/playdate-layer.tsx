@@ -63,7 +63,7 @@ export function PlaydateLayer({
 
     load();
 
-    const handleMoveEnd = () => load();
+    const handleMoveEnd = () => requestAnimationFrame(() => load());
     map.on("moveend", handleMoveEnd);
 
     return () => {
