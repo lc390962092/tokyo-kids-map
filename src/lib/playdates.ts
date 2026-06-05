@@ -106,12 +106,17 @@ export async function cancelResponse(playdateId: string): Promise<{ error?: Erro
   } = await supabase.auth.getUser();
   if (!user) return { error: new Error("请先登录") };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("playdate_responses")
     .update({ status: "cancelled" })
     .eq("playdate_id", playdateId)
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .select();
+
   if (error) return { error: new Error(error.message) };
+  if (!data || data.length === 0) {
+    return { error: new Error("未找到可取消的报名记录，请刷新页面重试") };
+  }
   return {};
 }
 

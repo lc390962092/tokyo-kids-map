@@ -121,6 +121,7 @@ function PlaydateCard({
   }
 
   async function handleCancelJoined() {
+    if (!confirm("确定取消这个报名吗？")) return;
     const { error } = await cancelResponse(playdate.id);
     if (error) alert(error.message);
     else onRefresh();
@@ -165,6 +166,7 @@ function PlaydateCard({
       <div className="mt-3 flex justify-end">
         {mode === "created" ? (
           <button
+            type="button"
             onClick={handleCancelCreated}
             disabled={isExpired}
             className="inline-flex items-center gap-1 rounded-full bg-red-50 px-3 py-1.5 text-xs font-bold text-red-500 transition hover:bg-red-100 disabled:opacity-50"
@@ -174,6 +176,7 @@ function PlaydateCard({
           </button>
         ) : (
           <button
+            type="button"
             onClick={handleCancelJoined}
             disabled={isExpired}
             className="inline-flex items-center gap-1 rounded-full border border-[#ffe0ce] bg-white px-3 py-1.5 text-xs font-bold text-[#76584e] transition hover:bg-[#fffaf4] disabled:opacity-50"
