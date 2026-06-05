@@ -22,7 +22,7 @@ export function createPlaydateMarker({
   el.style.zIndex = "999";
   el.style.position = "relative";
   const color = isMine ? "#4a8c4a" : "#ff8c73";
-  // Custom slower pulse animation (2.5s cycle)
+  // Custom slower pulse animation (3.5s cycle)
   const pulseId = `pulse-${Math.random().toString(36).slice(2, 8)}`;
   const style = document.createElement("style");
   style.textContent = `
@@ -34,7 +34,7 @@ export function createPlaydateMarker({
   `;
   document.head.appendChild(style);
   el.innerHTML = `
-    <span class="absolute inline-flex h-full w-full rounded-full opacity-75" style="background-color: ${color}; animation: ${pulseId} 2.5s ease-in-out infinite;"></span>
+    <span class="absolute inline-flex h-full w-full rounded-full opacity-75" style="background-color: ${color}; animation: ${pulseId} 3.5s ease-in-out infinite;"></span>
     <span class="relative inline-flex h-4 w-4 rounded-full ring-2 ring-white" style="background-color: ${color}"></span>
   `;
 
@@ -47,6 +47,12 @@ export function createPlaydateMarker({
   })
     .setLngLat([playdate.longitude, playdate.latitude + offsetLat])
     .addTo(map);
+
+  // Ensure playdate markers render above place markers by setting z-index on the outer container
+  const outerEl = marker.getElement();
+  if (outerEl) {
+    outerEl.style.zIndex = "999";
+  }
 
   // Popup content
   const popup = new maplibregl.Popup({
