@@ -118,16 +118,20 @@ function PlaydateCard({
     if (!confirm("确定取消这个邀约吗？")) return;
     const { error } = await cancelPlaydate(playdate.id);
     if (error) alert(error.message);
-    else onRefresh();
+    else {
+      alert("取消成功");
+      onRefresh();
+    }
   }
 
   async function handleCancelJoined() {
     if (!confirm("确定取消这个报名吗？")) return;
-    console.log("[handleCancelJoined] playdate.id =", playdate.id);
     const { error } = await cancelResponse(playdate.id);
-    console.log("[handleCancelJoined] result", { error });
     if (error) alert(error.message);
-    else onRefresh();
+    else {
+      alert("取消报名成功");
+      onRefresh();
+    }
   }
 
   return (

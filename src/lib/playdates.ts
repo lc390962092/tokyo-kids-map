@@ -76,7 +76,7 @@ export async function cancelPlaydate(id: string): Promise<{ error?: Error }> {
     .eq("id", id)
     .select();
 
-  console.log("[cancelPlaydate] result", { id, data, error });
+  
 
   if (error) return { error: new Error(error.message) };
   if (!data || data.length === 0) {
@@ -113,16 +113,12 @@ export async function cancelResponse(playdateId: string): Promise<{ error?: Erro
   } = await supabase.auth.getUser();
   if (!user) return { error: new Error("请先登录") };
 
-  console.log("[cancelResponse] start", { playdateId, userId: user.id });
-
   const { data, error } = await supabase
     .from("playdate_responses")
     .update({ status: "cancelled" })
     .eq("playdate_id", playdateId)
     .eq("user_id", user.id)
     .select();
-
-  console.log("[cancelResponse] result", { data, error });
 
   if (error) return { error: new Error(error.message) };
   if (!data || data.length === 0) {
@@ -147,8 +143,6 @@ export async function fetchMyPlaydates(userId: string): Promise<{
       .eq("user_id", userId)
       .eq("status", "going"),
   ]);
-
-  console.log("[fetchMyPlaydates] joined responses:", joined);
 
   let joinedPlaydates: PlaydateWithResponses[] = [];
   if (joined && joined.length > 0) {
