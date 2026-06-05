@@ -26,6 +26,7 @@ export function PlaydateLayer({
   const markersRef = useRef<Marker[]>([]);
 
   useEffect(() => {
+    console.log("[PlaydateLayer] useEffect", { visible, mapId: map?.getContainer()?.id });
     if (!visible) {
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
@@ -36,11 +37,13 @@ export function PlaydateLayer({
 
     async function load() {
       const center = map.getCenter();
+      console.log("[PlaydateLayer] loading, center:", center);
       const playdates = await fetchNearbyPlaydates(
         center.lat,
         center.lng,
         radiusMeters,
       );
+      console.log("[PlaydateLayer] loaded", playdates.length, playdates);
       if (cancelled) return;
 
       // Remove old markers
