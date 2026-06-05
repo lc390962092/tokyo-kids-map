@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { Map, Marker } from "maplibre-gl";
+import { useAuth } from "@/lib/supabase/auth-context";
 import { fetchNearbyPlaydates } from "@/lib/playdates";
 import { createPlaydateMarker } from "./playdate-marker";
 import type { Playdate } from "@/types/playdate";
@@ -21,6 +22,7 @@ export function PlaydateLayer({
   onPlaydatesLoaded,
   radiusMeters = 3000,
 }: PlaydateLayerProps) {
+  const { user } = useAuth();
   const markersRef = useRef<Marker[]>([]);
 
   useEffect(() => {
@@ -53,6 +55,7 @@ export function PlaydateLayer({
           map,
           playdate: p,
           onClick: onSelect,
+          isMine: user?.id === p.user_id,
         });
         markersRef.current.push(marker);
       });

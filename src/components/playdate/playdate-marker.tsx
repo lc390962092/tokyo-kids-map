@@ -8,18 +8,21 @@ export type PlaydateMarkerProps = {
   map: Map;
   playdate: Playdate;
   onClick?: (playdate: Playdate) => void;
+  isMine?: boolean;
 };
 
 export function createPlaydateMarker({
   map,
   playdate,
   onClick,
+  isMine = false,
 }: PlaydateMarkerProps): maplibregl.Marker {
   const el = document.createElement("div");
   el.className = "relative flex h-8 w-8 cursor-pointer items-center justify-center";
+  const color = isMine ? "#4a8c4a" : "#ff8c73";
   el.innerHTML = `
-    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#ff8c73] opacity-75"></span>
-    <span class="relative inline-flex h-3 w-3 rounded-full bg-[#ff8c73] ring-2 ring-white"></span>
+    <span class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75" style="background-color: ${color}"></span>
+    <span class="relative inline-flex h-3 w-3 rounded-full ring-2 ring-white" style="background-color: ${color}"></span>
   `;
 
   const marker = new maplibregl.Marker({

@@ -60,12 +60,23 @@ $$ LANGUAGE plpgsql STABLE;
 ALTER TABLE playdates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE playdate_responses ENABLE ROW LEVEL SECURITY;
 
--- playdates SELECT：所有人可查看活跃未过期邀约
+-- playdates SELECT：匿名用户只能看活跃未过期；登录用户还能看自己发起的（任何状态）
 DROP POLICY IF EXISTS "Playdates are viewable by everyone" ON playdates;
-CREATE POLICY "Playdates are viewable by everyone"
+DROP POLICY IF EXISTS "Playdates public view" ON playdates;
+DROP POLICY IF EXISTS "Playdates authenticated view" ON playdates;
+
+CREATE POLICY "Playdates public view"
   ON playdates FOR SELECT
-  TO anon, authenticated
+  TO anon
   USING (status = 'active' AND meet_at > now());
+
+CREATE POLICY "Playdates authenticated view"
+  ON playdates FOR SELECT
+  TO authenticated
+  USING (
+    (status = 'active' AND meet_at > now())
+    OR auth.uid() = user_id
+  );
 
 -- playdates INSERT：登录用户可创建，且必须是自己
 DROP POLICY IF EXISTS "Authenticated users can create playdates" ON playdates;
