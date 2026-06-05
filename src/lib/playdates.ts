@@ -8,13 +8,11 @@ export async function fetchNearbyPlaydates(
   lon: number,
   radiusMeters = 3000,
 ): Promise<Playdate[]> {
-  console.log("[fetchNearbyPlaydates] called", { lat, lon, radiusMeters });
   const { data, error } = await supabase.rpc("nearby_playdates", {
     lat,
     lon,
     _radius_meters: radiusMeters,
   });
-  console.log("[fetchNearbyPlaydates] result", { data, error });
   if (error) {
     console.error("fetchNearbyPlaydates error:", error);
     return [];

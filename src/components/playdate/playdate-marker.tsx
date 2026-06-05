@@ -18,11 +18,23 @@ export function createPlaydateMarker({
   isMine = false,
 }: PlaydateMarkerProps): maplibregl.Marker {
   const el = document.createElement("div");
-  el.className = "relative z-20 flex h-10 w-10 cursor-pointer items-center justify-center";
-  el.style.zIndex = "20";
+  el.className = "relative flex h-10 w-10 cursor-pointer items-center justify-center";
+  el.style.zIndex = "999";
+  el.style.position = "relative";
   const color = isMine ? "#4a8c4a" : "#ff8c73";
+  // Custom slower pulse animation (2.5s cycle)
+  const pulseId = `pulse-${Math.random().toString(36).slice(2, 8)}`;
+  const style = document.createElement("style");
+  style.textContent = `
+    @keyframes ${pulseId} {
+      0% { transform: scale(0.5); opacity: 0.8; }
+      50% { transform: scale(1.2); opacity: 0.4; }
+      100% { transform: scale(0.5); opacity: 0.8; }
+    }
+  `;
+  document.head.appendChild(style);
   el.innerHTML = `
-    <span class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75" style="background-color: ${color}"></span>
+    <span class="absolute inline-flex h-full w-full rounded-full opacity-75" style="background-color: ${color}; animation: ${pulseId} 2.5s ease-in-out infinite;"></span>
     <span class="relative inline-flex h-4 w-4 rounded-full ring-2 ring-white" style="background-color: ${color}"></span>
   `;
 

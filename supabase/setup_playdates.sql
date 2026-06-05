@@ -31,6 +31,8 @@ CREATE TABLE IF NOT EXISTS playdate_responses (
 -- ========================================
 -- 3. 附近搜索函数（Haversine，无需 PostGIS）
 -- ========================================
+DROP FUNCTION IF EXISTS nearby_playdates(double precision, double precision, double precision);
+
 CREATE OR REPLACE FUNCTION nearby_playdates(
   lat DOUBLE PRECISION,
   lon DOUBLE PRECISION,
