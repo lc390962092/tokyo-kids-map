@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { Plus, Pencil, Trash2, LogOut } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 import { categoryOptions } from "@/data/place-options";
 import type { PlaceRecord } from "@/types/place";
 import { PlaceFormModal } from "./place-form-modal";
@@ -115,6 +116,9 @@ export default function AdminPage() {
   return (
     <main className="min-h-screen bg-[#fffaf4] px-4 pb-6 pt-14 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
+        <div className="mb-4">
+          <BackButton />
+        </div>
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <h1 className="text-2xl font-black text-[#2c3834]">地点管理后台</h1>
           <div className="flex items-center gap-2">

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { BackButton } from "@/components/ui/back-button";
 
 const supabase = createSupabaseClient();
 
@@ -35,7 +36,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#fffaf4] px-4">
+    <main className="relative flex min-h-screen items-center justify-center bg-[#fffaf4] px-4">
+      <div className="absolute left-4 top-4">
+        <BackButton />
+      </div>
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-black text-[#2c3834]">

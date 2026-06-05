@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Calendar, MapPin, Users, X } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { fetchMyPlaydates, cancelPlaydate, cancelResponse } from "@/lib/playdates";
 import type { PlaydateWithResponses } from "@/types/playdate";
@@ -50,6 +51,9 @@ export default function MemberPage() {
   return (
     <main className="min-h-screen bg-[#fffaf4] px-4 pb-6 pt-14 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-3xl">
+        <div className="mb-4">
+          <BackButton />
+        </div>
         <h1 className="text-2xl font-black text-[#2c3834]">会员中心</h1>
         <p className="mt-1 text-sm font-bold text-[#8a6b5e]">
           {user.email?.split("@")[0]} · 管理我的邀约

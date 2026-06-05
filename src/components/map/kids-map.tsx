@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { type Map, type Marker } from "maplibre-gl";
 import { Crosshair } from "lucide-react";
 import { getCategoryColor, getCategoryLabel } from "@/data/place-options";
@@ -54,6 +54,7 @@ export default function KidsMap({
   placesRef.current = places;
   const onCreatePlaydateRef = useRef(onCreatePlaydateFromPlace);
   onCreatePlaydateRef.current = onCreatePlaydateFromPlace;
+  const [mapLoaded, setMapLoaded] = useState(false);
 
   const boundsKey = useMemo(
     () => places.map((place) => place.id).join(":"),
@@ -92,6 +93,7 @@ export default function KidsMap({
     );
 
     map.once("load", () => {
+      setMapLoaded(true);
       const geojson = createGeoJSON(placesRef.current);
 
       map.addSource("places", {
@@ -328,7 +330,7 @@ export default function KidsMap({
       >
         <Crosshair className="h-5 w-5" />
       </button>
-      {mapRef.current && showPlaydates && (
+      {mapLoaded && showPlaydates && mapRef.current && (
         <PlaydateLayer
           map={mapRef.current}
           visible={showPlaydates}
