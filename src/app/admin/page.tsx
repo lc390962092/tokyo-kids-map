@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { createSupabaseClient } from "@/lib/supabase/client";
-import { Plus, Pencil, Trash2, LogOut } from "lucide-react";
+import { Plus, Pencil, Trash2, LogOut, ToggleLeft, ToggleRight, Settings } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 import { categoryOptions } from "@/data/place-options";
 import type { PlaceRecord } from "@/types/place";
 import { PlaceFormModal } from "./place-form-modal";
+import { getSiteSetting, setSiteSetting } from "@/lib/site-settings";
 
 const supabase = createSupabaseClient();
 
@@ -44,6 +45,8 @@ export default function AdminPage() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<PlaceRecord | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [playdatesEnabled, setPlaydatesEnabled] = useState(true);
+  const [savingSetting, setSavingSetting] = useState(false);
 
   useEffect(() => {
     if (!loading && (!user || role !== "admin")) {
@@ -52,8 +55,27 @@ export default function AdminPage() {
   }, [user, role, loading, router]);
 
   useEffect(() => {
-    if (role === "admin") loadPlaces();
+    if (role === "admin") {
+      loadPlaces();
+      loadSettings();
+    }
   }, [role]);
+
+  async function loadSettings() {
+    const value = await getSiteSetting("playdates_enabled");
+    setPlaydatesEnabled(value === "true");
+  }
+
+  async function togglePlaydates(enabled: boolean) {
+    setSavingSetting(true);
+    const { error } = await setSiteSetting("playdates_enabled", enabled ? "true" : "false");
+    setSavingSetting(false);
+    if (error) {
+      alert("保存失败: " + error.message);
+      return;
+    }
+    setPlaydatesEnabled(enabled);
+  }
 
   async function loadPlaces() {
     setIsLoading(true);
@@ -119,6 +141,40 @@ export default function AdminPage() {
         <div className="mb-4">
           <BackButton />
         </div>
+        {/* 功能开关面板 */}
+        <div className="mb-6 rounded-2xl border border-[#ffe0ce] bg-white p-5 shadow-sm">
+          <div className="mb-3 flex items-center gap-2 text-sm font-black text-[#6d5147]">
+            <Settings className="h-4 w-4" />
+            功能开关
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-bold text-[#2c3834]">约伴功能</div>
+              <div className="text-xs text-[#8a6b5e]">
+                关闭后所有用户将无法看到约伴标记和发起约伴
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => togglePlaydates(!playdatesEnabled)}
+              disabled={savingSetting}
+              className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold transition disabled:opacity-50"
+            >
+              {playdatesEnabled ? (
+                <>
+                  <ToggleRight className="h-6 w-6 text-green-500" />
+                  <span className="text-green-600">已开启</span>
+                </>
+              ) : (
+                <>
+                  <ToggleLeft className="h-6 w-6 text-gray-400" />
+                  <span className="text-gray-500">已关闭</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <h1 className="text-2xl font-black text-[#2c3834]">地点管理后台</h1>
           <div className="flex items-center gap-2">

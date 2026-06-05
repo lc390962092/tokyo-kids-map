@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Calendar, MapPin, Users, X } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 import { useAuth } from "@/lib/supabase/auth-context";
-import { fetchMyPlaydates, cancelPlaydate, cancelResponse } from "@/lib/playdates";
+import { fetchMyPlaydates, cancelPlaydate, cancelResponse, fetchUnreadResponseCount } from "@/lib/playdates";
 import type { PlaydateWithResponses } from "@/types/playdate";
 
 export default function MemberPage() {
@@ -14,6 +14,7 @@ export default function MemberPage() {
   const [created, setCreated] = useState<PlaydateWithResponses[]>([]);
   const [joined, setJoined] = useState<PlaydateWithResponses[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const now = new Date();
 
@@ -26,9 +27,13 @@ export default function MemberPage() {
   const load = useCallback(async () => {
     if (!user) return;
     setIsLoading(true);
-    const { created, joined } = await fetchMyPlaydates(user.id);
+    const [{ created, joined }, unread] = await Promise.all([
+      fetchMyPlaydates(user.id),
+      fetchUnreadResponseCount(user.id),
+    ]);
     setCreated(created);
     setJoined(joined);
+    setUnreadCount(unread);
     setIsLoading(false);
   }, [user]);
 
@@ -60,7 +65,14 @@ export default function MemberPage() {
         </p>
 
         <section className="mt-6">
-          <h2 className="text-lg font-black text-[#2c3834]">我发起的邀约</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-black text-[#2c3834]">我发起的邀约</h2>
+            {unreadCount > 0 && (
+              <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-black text-white">
+                {unreadCount} 新报名
+              </span>
+            )}
+          </div>
           <div className="mt-3 space-y-3">
             {created.filter((p) => new Date(p.meet_at) >= now && p.status !== "cancelled").length === 0 && (
               <p className="text-sm text-[#c4a99b]">没有进行中的邀约</p>
@@ -111,6 +123,9 @@ function PlaydateCard({
   onRefresh: () => void;
 }) {
   const goingCount = playdate.responses.filter((r) => r.status === "going").length;
+  const unreadResponses = playdate.responses.filter(
+    (r) => r.status === "going" && r.notified === false,
+  ).length;
   const isExpired = new Date(playdate.meet_at) < new Date();
   const isCancelled = playdate.status === "cancelled";
 
@@ -171,6 +186,11 @@ function PlaydateCard({
         <span className="inline-flex items-center gap-1">
           <Users className="h-3 w-3 text-[#ff8c73]" />
           {goingCount} / {playdate.max_participants}
+          {mode === "created" && unreadResponses > 0 && (
+            <span className="ml-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-black text-white">
+              {unreadResponses}
+            </span>
+          )}
         </span>
       </div>
 

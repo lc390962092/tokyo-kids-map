@@ -22,6 +22,7 @@ import type { Place, PlaceFilters } from "@/types/place";
 import type { Playdate } from "@/types/playdate";
 import { PlaydateFormModal } from "@/components/playdate/playdate-form-modal";
 import { PlaydateDetailModal } from "@/components/playdate/playdate-detail-modal";
+import { isPlaydatesEnabled } from "@/lib/site-settings";
 
 const supabase = createSupabaseClient();
 
@@ -43,6 +44,7 @@ export function MapExperience({ places }: MapExperienceProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [showPlaydates, setShowPlaydates] = useState(false);
   const [playdatesFeatureEnabled, setPlaydatesFeatureEnabled] = useState(true);
+  const [featureLoading, setFeatureLoading] = useState(true);
   const [selectedPlaydate, setSelectedPlaydate] = useState<Playdate | null>(
     null,
   );
@@ -57,7 +59,7 @@ export function MapExperience({ places }: MapExperienceProps) {
     [places, filters],
   );
 
-  // Auto-enable playdates display on login
+  // Auto-enable playdates display on login + read global feature flag
   useEffect(() => {
     if (user) {
       setShowPlaydates(true);
@@ -65,6 +67,13 @@ export function MapExperience({ places }: MapExperienceProps) {
       setShowPlaydates(false);
     }
   }, [user]);
+
+  useEffect(() => {
+    isPlaydatesEnabled().then((enabled) => {
+      setPlaydatesFeatureEnabled(enabled);
+      setFeatureLoading(false);
+    });
+  }, []);
 
   return (
     <main className="h-dvh overflow-hidden bg-[#fffaf4]">
@@ -82,7 +91,7 @@ export function MapExperience({ places }: MapExperienceProps) {
         <section className="relative h-full">
           <KidsMap
             places={filteredPlaces}
-            showPlaydates={showPlaydates && playdatesFeatureEnabled}
+            showPlaydates={showPlaydates && playdatesFeatureEnabled && !featureLoading}
             onSelectPlaydate={setSelectedPlaydate}
             onCreatePlaydateFromPlace={(place) => {
               setCreateFromPlaceId(place.id);
@@ -93,24 +102,7 @@ export function MapExperience({ places }: MapExperienceProps) {
 
           {/* PC版顶部工具栏 */}
           <div className="absolute right-4 top-4 z-10 hidden items-center gap-2 md:flex">
-            {/* 管理员：约伴功能总开关 */}
-            {role === "admin" && (
-              <button
-                type="button"
-                onClick={() => setPlaydatesFeatureEnabled((v) => !v)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold shadow-md transition ${
-                  playdatesFeatureEnabled
-                    ? "bg-green-500 text-white"
-                    : "bg-gray-300 text-gray-600"
-                }`}
-                title={playdatesFeatureEnabled ? "点击关闭约伴功能" : "点击开启约伴功能"}
-              >
-                <Shield className="h-3.5 w-3.5" />
-                约伴{playdatesFeatureEnabled ? "开启" : "关闭"}
-              </button>
-            )}
-
-            {user && playdatesFeatureEnabled && (
+            {user && playdatesFeatureEnabled && !featureLoading && (
               <>
                 <button
                   type="button"

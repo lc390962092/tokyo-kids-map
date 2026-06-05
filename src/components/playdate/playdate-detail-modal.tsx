@@ -7,6 +7,7 @@ import {
   respondToPlaydate,
   cancelResponse,
   cancelPlaydate,
+  markResponsesAsNotified,
 } from "@/lib/playdates";
 import { useAuth } from "@/lib/supabase/auth-context";
 import type { PlaydateWithResponses } from "@/types/playdate";
@@ -32,8 +33,12 @@ export function PlaydateDetailModal({
     setLoading(true);
     const data = await fetchPlaydateWithResponses(playdateId);
     setPlaydate(data);
+    // Mark unread responses as notified if user is the owner
+    if (data && user?.id === data.user_id) {
+      await markResponsesAsNotified(playdateId);
+    }
     setLoading(false);
-  }, [playdateId]);
+  }, [playdateId, user]);
 
   useEffect(() => {
     load();

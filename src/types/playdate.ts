@@ -19,6 +19,7 @@ export type PlaydateResponse = {
   user_id: string;
   message: string | null;
   status: "going" | "cancelled";
+  notified: boolean;
   created_at: string;
 };
 

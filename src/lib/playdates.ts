@@ -160,3 +160,36 @@ export async function fetchMyPlaydates(userId: string): Promise<{
     joined: joinedPlaydates,
   };
 }
+
+export async function markResponsesAsNotified(
+  playdateId: string,
+): Promise<{ error?: Error }> {
+  const { error } = await supabase
+    .from("playdate_responses")
+    .update({ notified: true })
+    .eq("playdate_id", playdateId)
+    .eq("notified", false)
+    .eq("status", "going");
+  if (error) return { error: new Error(error.message) };
+  return {};
+}
+
+export async function fetchUnreadResponseCount(
+  userId: string,
+): Promise<number> {
+  const { data, error } = await supabase
+    .from("playdate_responses")
+    .select("id", { count: "exact" })
+    .eq("notified", false)
+    .eq("status", "going")
+    .not("user_id", "eq", userId)
+    .in(
+      "playdate_id",
+      supabase.from("playdates").select("id").eq("user_id", userId),
+    );
+  if (error) {
+    console.error("fetchUnreadResponseCount error:", error);
+    return 0;
+  }
+  return data?.length ?? 0;
+}
