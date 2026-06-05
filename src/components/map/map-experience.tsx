@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Search,
   MapPin,
@@ -41,7 +41,8 @@ type MapExperienceProps = {
 export function MapExperience({ places }: MapExperienceProps) {
   const [filters, setFilters] = useState<PlaceFilters>(defaultFilters);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [showPlaydates, setShowPlaydates] = useState(true);
+  const [showPlaydates, setShowPlaydates] = useState(false);
+  const [playdatesFeatureEnabled, setPlaydatesFeatureEnabled] = useState(true);
   const [selectedPlaydate, setSelectedPlaydate] = useState<Playdate | null>(
     null,
   );
@@ -55,6 +56,15 @@ export function MapExperience({ places }: MapExperienceProps) {
     () => filterPlaces(places, filters),
     [places, filters],
   );
+
+  // Auto-enable playdates display on login
+  useEffect(() => {
+    if (user) {
+      setShowPlaydates(true);
+    } else {
+      setShowPlaydates(false);
+    }
+  }, [user]);
 
   return (
     <main className="h-dvh overflow-hidden bg-[#fffaf4]">
@@ -72,7 +82,7 @@ export function MapExperience({ places }: MapExperienceProps) {
         <section className="relative h-full">
           <KidsMap
             places={filteredPlaces}
-            showPlaydates={showPlaydates}
+            showPlaydates={showPlaydates && playdatesFeatureEnabled}
             onSelectPlaydate={setSelectedPlaydate}
             onCreatePlaydateFromPlace={(place) => {
               setCreateFromPlaceId(place.id);
@@ -80,6 +90,94 @@ export function MapExperience({ places }: MapExperienceProps) {
             }}
             onPlaydatesLoaded={setNearbyPlaydates}
           />
+
+          {/* PC版顶部工具栏 */}
+          <div className="absolute right-4 top-4 z-10 hidden items-center gap-2 md:flex">
+            {/* 管理员：约伴功能总开关 */}
+            {role === "admin" && (
+              <button
+                type="button"
+                onClick={() => setPlaydatesFeatureEnabled((v) => !v)}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold shadow-md transition ${
+                  playdatesFeatureEnabled
+                    ? "bg-green-500 text-white"
+                    : "bg-gray-300 text-gray-600"
+                }`}
+                title={playdatesFeatureEnabled ? "点击关闭约伴功能" : "点击开启约伴功能"}
+              >
+                <Shield className="h-3.5 w-3.5" />
+                约伴{playdatesFeatureEnabled ? "开启" : "关闭"}
+              </button>
+            )}
+
+            {user && playdatesFeatureEnabled && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowPlaydates((v) => !v)}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold shadow-md transition ${
+                    showPlaydates
+                      ? "bg-[#ff8c73] text-white"
+                      : "bg-white text-[#76584e]"
+                  }`}
+                >
+                  <UsersRound className="h-3.5 w-3.5" />
+                  {showPlaydates ? "隐藏约伴" : "显示约伴"}
+                  {nearbyPlaydates.length > 0 && (
+                    <span className="ml-0.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white">
+                      {nearbyPlaydates.length}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCreateOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#4a8c4a] px-3 py-2 text-xs font-bold text-white shadow-md transition hover:bg-[#3d7a3d]"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  发起约伴
+                </button>
+
+                <Link
+                  href="/member"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-2 text-xs font-bold text-[#76584e] shadow-md transition hover:bg-[#fffaf4]"
+                >
+                  <UsersRound className="h-3.5 w-3.5" />
+                  会员中心
+                </Link>
+              </>
+            )}
+
+            {role === "admin" && (
+              <Link
+                href="/admin"
+                className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-2 text-xs font-bold text-[#ff8c73] shadow-md transition hover:bg-[#fffaf4]"
+              >
+                <Shield className="h-3.5 w-3.5" />
+                管理后台
+              </Link>
+            )}
+
+            {user ? (
+              <button
+                type="button"
+                onClick={() => supabase.auth.signOut()}
+                className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-2 text-xs font-bold text-[#76584e] shadow-md transition hover:bg-[#fffaf4]"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                退出
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-2 text-xs font-bold text-[#76584e] shadow-md transition hover:bg-[#fffaf4]"
+              >
+                <LogIn className="h-3.5 w-3.5" />
+                登录
+              </Link>
+            )}
+          </div>
 
           <div className="absolute left-4 right-4 top-4 z-10 flex items-center justify-between gap-3 rounded-3xl border border-white/70 bg-white/90 px-4 py-3 shadow-lg backdrop-blur md:hidden">
             <div>
