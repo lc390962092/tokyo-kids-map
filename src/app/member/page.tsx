@@ -14,6 +14,8 @@ export default function MemberPage() {
   const [joined, setJoined] = useState<PlaydateWithResponses[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const now = new Date();
+
   useEffect(() => {
     if (!loading && !user) {
       router.replace("/login?redirect=/member");
@@ -56,34 +58,38 @@ export default function MemberPage() {
         <section className="mt-6">
           <h2 className="text-lg font-black text-[#2c3834]">我发起的邀约</h2>
           <div className="mt-3 space-y-3">
-            {created.length === 0 && (
-              <p className="text-sm text-[#c4a99b]">还没有发起过邀约</p>
+            {created.filter((p) => new Date(p.meet_at) >= now).length === 0 && (
+              <p className="text-sm text-[#c4a99b]">没有进行中的邀约</p>
             )}
-            {created.map((p) => (
-              <PlaydateCard
-                key={p.id}
-                playdate={p}
-                mode="created"
-                onRefresh={load}
-              />
-            ))}
+            {created
+              .filter((p) => new Date(p.meet_at) >= now)
+              .map((p) => (
+                <PlaydateCard
+                  key={p.id}
+                  playdate={p}
+                  mode="created"
+                  onRefresh={load}
+                />
+              ))}
           </div>
         </section>
 
         <section className="mt-8">
           <h2 className="text-lg font-black text-[#2c3834]">我报名的邀约</h2>
           <div className="mt-3 space-y-3">
-            {joined.length === 0 && (
-              <p className="text-sm text-[#c4a99b]">还没有报名过邀约</p>
+            {joined.filter((p) => new Date(p.meet_at) >= now).length === 0 && (
+              <p className="text-sm text-[#c4a99b]">没有进行中的报名</p>
             )}
-            {joined.map((p) => (
-              <PlaydateCard
-                key={p.id}
-                playdate={p}
-                mode="joined"
-                onRefresh={load}
-              />
-            ))}
+            {joined
+              .filter((p) => new Date(p.meet_at) >= now)
+              .map((p) => (
+                <PlaydateCard
+                  key={p.id}
+                  playdate={p}
+                  mode="joined"
+                  onRefresh={load}
+                />
+              ))}
           </div>
         </section>
       </div>

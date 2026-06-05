@@ -123,14 +123,14 @@ CREATE POLICY "Authenticated users can respond"
   TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
--- responses UPDATE/DELETE：仅自己
+-- responses UPDATE：仅自己（UPDATE 只用 USING，不用 WITH CHECK，避免 RLS 误判）
 DROP POLICY IF EXISTS "Users can update their own responses" ON playdate_responses;
 CREATE POLICY "Users can update their own responses"
   ON playdate_responses FOR UPDATE
   TO authenticated
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  USING (auth.uid() = user_id);
 
+-- responses DELETE：仅自己
 DROP POLICY IF EXISTS "Users can delete their own responses" ON playdate_responses;
 CREATE POLICY "Users can delete their own responses"
   ON playdate_responses FOR DELETE

@@ -18,18 +18,22 @@ export function createPlaydateMarker({
   isMine = false,
 }: PlaydateMarkerProps): maplibregl.Marker {
   const el = document.createElement("div");
-  el.className = "relative flex h-8 w-8 cursor-pointer items-center justify-center";
+  el.className = "relative z-20 flex h-10 w-10 cursor-pointer items-center justify-center";
+  el.style.zIndex = "20";
   const color = isMine ? "#4a8c4a" : "#ff8c73";
   el.innerHTML = `
     <span class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75" style="background-color: ${color}"></span>
-    <span class="relative inline-flex h-3 w-3 rounded-full ring-2 ring-white" style="background-color: ${color}"></span>
+    <span class="relative inline-flex h-4 w-4 rounded-full ring-2 ring-white" style="background-color: ${color}"></span>
   `;
+
+  // Slightly offset to avoid overlapping with place markers at exact same location
+  const offsetLat = 0.00002;
 
   const marker = new maplibregl.Marker({
     element: el,
     anchor: "center",
   })
-    .setLngLat([playdate.longitude, playdate.latitude])
+    .setLngLat([playdate.longitude, playdate.latitude + offsetLat])
     .addTo(map);
 
   // Popup content
@@ -62,7 +66,8 @@ function createPopupHTML(playdate: Playdate): string {
 
   return `
     <div class="w-56 overflow-hidden rounded-2xl bg-white p-4 shadow-xl">
-      <div class="text-xs font-bold text-[#ff8c73]">附近约伴 · ${dateStr} ${timeStr}</div>
+      <div class="inline-block rounded-full bg-[#ff8c73] px-2 py-0.5 text-[10px] font-black text-white">约伴</div>
+      <div class="mt-1 text-xs font-bold text-[#8a6b5e]">${dateStr} ${timeStr}</div>
       <div class="mt-1 text-base font-black text-[#2c3834] line-clamp-2">${escapeHtml(
         playdate.title,
       )}</div>
