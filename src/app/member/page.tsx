@@ -122,7 +122,9 @@ function PlaydateCard({
 
   async function handleCancelJoined() {
     if (!confirm("确定取消这个报名吗？")) return;
+    console.log("[handleCancelJoined] playdate.id =", playdate.id);
     const { error } = await cancelResponse(playdate.id);
+    console.log("[handleCancelJoined] result", { error });
     if (error) alert(error.message);
     else onRefresh();
   }
