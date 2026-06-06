@@ -34,11 +34,14 @@ function extractWard(address) {
 }
 
 function slugify(name) {
-  return name
+  // Preserve Japanese kana/kanji while removing punctuation and special chars
+  const s = name
     .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
+    .replace(/[^\w\s\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF-]/g, "")
     .replace(/\s+/g, "-")
+    .replace(/^-+|-+$/g, "")
     .substring(0, 60);
+  return s || undefined; // caller falls back to id if empty
 }
 
 function loadSources() {
@@ -101,7 +104,7 @@ async function main() {
 
     const place = {
       id: crypto.randomUUID(),
-      slug: slugify(r.name),
+      slug: slugify(r.name) || crypto.randomUUID(),
       name_zh: r.name_zh || r.name,
       name_ja: r.name,
       category,
