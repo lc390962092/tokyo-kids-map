@@ -1,4 +1,4 @@
--- Insert new family trip places (lat/lon = 0, needs manual correction)
+-- Upsert family trip places (insert or update if exists)
 INSERT INTO places (id, slug, name_zh, name_ja, category, ward, latitude, longitude, address, nearest_station, age_min, age_max, indoor, rainy_day, free_entry, stroller_score, diaper_score, parking_score, play_score, description, tips, image_url) VALUES 
   ('6449e669-1d24-4ea1-95c4-b66e2a46caa3', '子育てひろば四番町', '子育てひろば四番町', '子育てひろば四番町', 'children_center', '千代田区', 0, 0, '東京都千代田区四番町11', '', 0, 9, true, true, true, 5, 5, 3, 4, 'の児童館。利用者支援：有。', '电话: 03-3234-3084', ''),
   ('311a8457-2b73-4749-97a7-ceea22c7c65c', '子育てひろば-なないろ', '子育てひろば　なないろ', '子育てひろば　なないろ', 'children_center', '千代田区', 0, 0, '東京都千代田区三番町７', '', 0, 9, true, true, true, 5, 5, 3, 5, 'の公共施設。利用者支援：有。', '电话: 03-3556-8471', ''),
@@ -672,4 +672,26 @@ JR山手線 駒込駅 下車　徒歩１２分
   ('46b3ede6-ef5d-4946-86e4-641b9a030f39', '葛飾区立柴又図書館', '葛飾区立柴又図書館', '葛飾区立柴又図書館', 'library', '葛飾区', 0, 0, '東京都葛飾区柴又7-8-1', '', 0, 12, true, true, true, 5, 5, 3, 3, '葛飾区の公立図書館。絵本・児童書コーナーあり。', '电话: 03-3657-0111', ''),
   ('be06300b-d4f0-479a-a854-67904565c18d', '江戸川区立中央図書館', '江戸川区立中央図書館', '江戸川区立中央図書館', 'library', '江戸川区', 0, 0, '東京都江戸川区中央4-1-1', '', 0, 12, true, true, true, 5, 5, 3, 3, '江戸川区の公立図書館。絵本・児童書コーナーあり。', '电话: 03-3670-0111', ''),
   ('00b15f75-df19-4263-a72a-93ec5ed2eff3', '江戸川区立小岩図書館', '江戸川区立小岩図書館', '江戸川区立小岩図書館', 'library', '江戸川区', 0, 0, '東京都江戸川区南小岩7-24-1', '', 0, 12, true, true, true, 5, 5, 3, 3, '江戸川区の公立図書館。絵本・児童書コーナーあり。', '电话: 03-3671-0111', ''),
-  ('4745c49e-f099-49a7-9182-29f50983d051', '江戸川区立平井図書館', '江戸川区立平井図書館', '江戸川区立平井図書館', 'library', '江戸川区', 0, 0, '東京都江戸川区平井5-12-1', '', 0, 12, true, true, true, 5, 5, 3, 3, '江戸川区の公立図書館。絵本・児童書コーナーあり。', '电话: 03-3681-0111', '');
+  ('4745c49e-f099-49a7-9182-29f50983d051', '江戸川区立平井図書館', '江戸川区立平井図書館', '江戸川区立平井図書館', 'library', '江戸川区', 0, 0, '東京都江戸川区平井5-12-1', '', 0, 12, true, true, true, 5, 5, 3, 3, '江戸川区の公立図書館。絵本・児童書コーナーあり。', '电话: 03-3681-0111', '')
+ON CONFLICT (id) DO UPDATE SET
+  slug = EXCLUDED.slug,
+  name_zh = EXCLUDED.name_zh,
+  name_ja = EXCLUDED.name_ja,
+  category = EXCLUDED.category,
+  ward = EXCLUDED.ward,
+  latitude = EXCLUDED.latitude,
+  longitude = EXCLUDED.longitude,
+  address = EXCLUDED.address,
+  nearest_station = EXCLUDED.nearest_station,
+  age_min = EXCLUDED.age_min,
+  age_max = EXCLUDED.age_max,
+  indoor = EXCLUDED.indoor,
+  rainy_day = EXCLUDED.rainy_day,
+  free_entry = EXCLUDED.free_entry,
+  stroller_score = EXCLUDED.stroller_score,
+  diaper_score = EXCLUDED.diaper_score,
+  parking_score = EXCLUDED.parking_score,
+  play_score = EXCLUDED.play_score,
+  description = EXCLUDED.description,
+  tips = EXCLUDED.tips,
+  image_url = EXCLUDED.image_url;
