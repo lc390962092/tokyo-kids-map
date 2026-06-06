@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+
+export const dynamic = "force-dynamic";
 import { ArrowLeft, Baby, Car, CloudRain, MapPin, Ticket } from "lucide-react";
 import { MapNavButton } from "@/components/place/map-nav-button";
 import { RatingStars } from "@/components/place/rating-stars";
