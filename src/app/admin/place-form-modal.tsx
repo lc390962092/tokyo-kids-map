@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, ExternalLink, Upload, MapPin } from "lucide-react";
+import { X, ExternalLink, Upload, MapPin, AlertTriangle } from "lucide-react";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { categoryOptions } from "@/data/place-options";
 import type { PlaceRecord } from "@/types/place";
@@ -36,6 +36,27 @@ export function PlaceFormModal({ initial, onClose, onSave }: PlaceFormModalProps
             <X className="h-5 w-5" />
           </button>
         </div>
+
+        {form.latitude === 0 && form.longitude === 0 && (
+          <div className="mb-4 flex items-start gap-2 rounded-2xl bg-red-50 p-4 text-sm">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+            <div>
+              <p className="font-bold text-red-600">该地点尚未定位</p>
+              <p className="mt-1 text-red-500">
+                请先在 Google 地图中搜索地址，右键点击正确位置选择「复制坐标」，然后粘贴到下方「Google Maps 链接」输入框中。
+              </p>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(form.address)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center gap-1 rounded-full bg-red-500 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-red-600"
+              >
+                <MapPin className="h-3 w-3" />
+                在 Google 地图中打开
+              </a>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">

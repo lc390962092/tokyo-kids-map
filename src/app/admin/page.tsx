@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { createSupabaseClient } from "@/lib/supabase/client";
-import { Plus, Pencil, Trash2, LogOut, ToggleLeft, ToggleRight, Settings } from "lucide-react";
+import { Plus, Pencil, Trash2, LogOut, ToggleLeft, ToggleRight, Settings, AlertTriangle, MapPin } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 import { categoryOptions } from "@/data/place-options";
 import type { PlaceRecord } from "@/types/place";
@@ -220,10 +220,20 @@ export default function AdminPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#ffe0ce]">
-                {filtered.map((p) => (
-                  <tr key={p.id} className="hover:bg-[#fffaf4]">
+                {filtered.map((p) => {
+                  const needsGeo = p.latitude === 0 && p.longitude === 0;
+                  return (
+                  <tr key={p.id} className={needsGeo ? "bg-red-50/50" : "hover:bg-[#fffaf4]"}>
                     <td className="px-4 py-3 font-bold text-[#2c3834]">
-                      {p.name_zh}
+                      <div className="flex items-center gap-1.5">
+                        {p.name_zh}
+                        {needsGeo && (
+                          <span className="inline-flex items-center gap-0.5 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-500">
+                            <AlertTriangle className="h-3 w-3" />
+                            待定位
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-[#76584e]">{p.ward}</td>
                     <td className="px-4 py-3 text-[#76584e]">
@@ -231,10 +241,25 @@ export default function AdminPage() {
                         ?.label ?? p.category}
                     </td>
                     <td className="px-4 py-3 text-[#76584e]">
-                      {p.latitude}, {p.longitude}
+                      {needsGeo ? (
+                        <span className="text-red-400">未定位</span>
+                      ) : (
+                        `${p.latitude.toFixed(4)}, ${p.longitude.toFixed(4)}`
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2">
+                        {needsGeo && (
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.address)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded-full bg-red-100 p-2 text-red-500 transition hover:bg-red-500 hover:text-white"
+                            title="在 Google 地图中搜索"
+                          >
+                            <MapPin className="h-4 w-4" />
+                          </a>
+                        )}
                         <button
                           onClick={() => setEditing(p)}
                           className="rounded-full bg-[#fff0e8] p-2 text-[#ff8c73] transition hover:bg-[#ff8c73] hover:text-white"

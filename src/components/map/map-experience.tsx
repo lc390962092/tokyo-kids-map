@@ -55,7 +55,7 @@ export function MapExperience({ places }: MapExperienceProps) {
   const { user, role } = useAuth();
 
   const filteredPlaces = useMemo(
-    () => filterPlaces(places, filters),
+    () => filterPlaces(places, filters).filter((p) => p.latitude !== 0 && p.longitude !== 0),
     [places, filters],
   );
 
