@@ -17,7 +17,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
 );
 
-function mapCategory(dataType, subcategory, tags) {
+function mapCategory(dataType, subcategory, tags, name) {
   if (dataType === "park" || tags?.includes("公園")) return "park";
   if (dataType === "library" || subcategory?.includes("図書館")) return "library";
   if (subcategory?.includes("児童館") || subcategory?.includes("子育て")) return "children_center";
@@ -25,6 +25,9 @@ function mapCategory(dataType, subcategory, tags) {
   if (subcategory?.includes("水族館")) return "aquarium";
   if (subcategory?.includes("動物園")) return "zoo";
   if (tags?.includes("室内") || tags?.includes("雨天OK")) return "indoor_play";
+  if (name && (name.includes("子育て") || name.includes("児童館") || name.includes("交流サロン") || name.includes("子ども"))) {
+    return "children_center";
+  }
   return "park";
 }
 
@@ -99,7 +102,7 @@ async function main() {
     }
 
     const ft = r.family_tags || {};
-    const category = mapCategory(r.data_type, r.subcategory, r.tags);
+    const category = mapCategory(r.data_type, r.subcategory, r.tags, r.name);
     const ward = extractWard(r.address);
 
     const place = {
