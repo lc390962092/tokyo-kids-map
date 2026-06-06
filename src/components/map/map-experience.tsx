@@ -54,6 +54,8 @@ export function MapExperience({ places }: MapExperienceProps) {
   const [nearbyPlaydates, setNearbyPlaydates] = useState<Playdate[]>([]);
   const { user, role } = useAuth();
 
+  const totalPlaces = places.length;
+  const pendingGeoCount = places.filter((p) => p.latitude === 0 || p.longitude === 0).length;
   const filteredPlaces = useMemo(
     () => filterPlaces(places, filters).filter((p) => p.latitude !== 0 && p.longitude !== 0),
     [places, filters],
@@ -83,6 +85,8 @@ export function MapExperience({ places }: MapExperienceProps) {
             filters={filters}
             onChange={setFilters}
             resultCount={filteredPlaces.length}
+            totalPlaces={totalPlaces}
+            pendingGeoCount={pendingGeoCount}
             nearbyPlaydates={nearbyPlaydates}
             onSelectPlaydate={setSelectedPlaydate}
           />
@@ -178,6 +182,9 @@ export function MapExperience({ places }: MapExperienceProps) {
               </div>
               <div className="text-xs font-bold text-[#8a6b5e]">
                 Tokyo Kids Map · {filteredPlaces.length} 个地点
+                {pendingGeoCount > 0 && (
+                  <span className="ml-1.5 text-[#ff8c73]">· {pendingGeoCount} 个待定位</span>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">

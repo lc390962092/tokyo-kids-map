@@ -10,6 +10,8 @@ type PlaceFilterPanelProps = {
   filters: PlaceFilters;
   onChange: (filters: PlaceFilters) => void;
   resultCount: number;
+  totalPlaces?: number;
+  pendingGeoCount?: number;
   nearbyPlaydates?: Playdate[];
   onSelectPlaydate?: (playdate: Playdate) => void;
 };
@@ -18,6 +20,8 @@ export function PlaceFilterPanel({
   filters,
   onChange,
   resultCount,
+  totalPlaces,
+  pendingGeoCount = 0,
   nearbyPlaydates = [],
   onSelectPlaydate,
 }: PlaceFilterPanelProps) {
@@ -52,6 +56,12 @@ export function PlaceFilterPanel({
           </h1>
           <p className="mt-1 text-sm font-medium text-[#8a6b5e]">
             Tokyo Kids Map · {resultCount} 个地点
+            {pendingGeoCount > 0 && (
+              <span className="ml-1 text-[#ff8c73]">· {pendingGeoCount} 个待定位</span>
+            )}
+            {totalPlaces !== undefined && (
+              <span className="ml-1 text-xs text-[#c4a99b]">(共 {totalPlaces} 条)</span>
+            )}
           </p>
         </div>
         <button
