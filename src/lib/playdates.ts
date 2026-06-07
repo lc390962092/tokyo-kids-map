@@ -177,16 +177,20 @@ export async function markResponsesAsNotified(
 export async function fetchUnreadResponseCount(
   userId: string,
 ): Promise<number> {
+  const { data: hostedIds } = await supabase
+    .from("playdates")
+    .select("id")
+    .eq("user_id", userId);
+  const playdateIds = (hostedIds ?? []).map((row) => row.id).filter(Boolean);
+  if (playdateIds.length === 0) return 0;
+
   const { data, error } = await supabase
     .from("playdate_responses")
     .select("id", { count: "exact" })
     .eq("notified", false)
     .eq("status", "going")
     .not("user_id", "eq", userId)
-    .in(
-      "playdate_id",
-      supabase.from("playdates").select("id").eq("user_id", userId),
-    );
+    .in("playdate_id", playdateIds);
   if (error) {
     console.error("fetchUnreadResponseCount error:", error);
     return 0;

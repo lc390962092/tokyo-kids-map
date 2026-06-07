@@ -220,14 +220,19 @@ export default function AdminPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#ffe0ce]">
-                {filtered.map((p) => {
-                  const needsGeo = p.latitude === 0 && p.longitude === 0;
-                  return (
-                  <tr key={p.id} className={needsGeo ? "bg-red-50/50" : "hover:bg-[#fffaf4]"}>
+                {filtered.map((p) => (
+                  <tr
+                    key={p.id}
+                    className={
+                      p.latitude === 0 && p.longitude === 0
+                        ? "bg-red-50/50"
+                        : "hover:bg-[#fffaf4]"
+                    }
+                  >
                     <td className="px-4 py-3 font-bold text-[#2c3834]">
                       <div className="flex items-center gap-1.5">
                         {p.name_zh}
-                        {needsGeo && (
+                        {p.latitude === 0 && p.longitude === 0 && (
                           <span className="inline-flex items-center gap-0.5 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-500">
                             <AlertTriangle className="h-3 w-3" />
                             待定位
@@ -241,15 +246,15 @@ export default function AdminPage() {
                         ?.label ?? p.category}
                     </td>
                     <td className="px-4 py-3 text-[#76584e]">
-                      {needsGeo ? (
+                      {p.latitude === 0 && p.longitude === 0 ? (
                         <span className="text-red-400">未定位</span>
                       ) : (
-                        `${p.latitude.toFixed(4)}, ${p.longitude.toFixed(4)}`
+                        `${Number(p.latitude).toFixed(4)}, ${Number(p.longitude).toFixed(4)}`
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2">
-                        {needsGeo && (
+                        {p.latitude === 0 && p.longitude === 0 && (
                           <a
                             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.address)}`}
                             target="_blank"
