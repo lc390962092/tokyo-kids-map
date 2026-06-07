@@ -28,3 +28,32 @@ export function mapPlaceRecord(record: PlaceRecord): Place {
     updatedAt: record.updated_at,
   };
 }
+
+export function mapPlaceToRecord(place: Place): PlaceRecord {
+  return {
+    id: place.id,
+    slug: place.slug,
+    name_zh: place.nameZh,
+    name_ja: place.nameJa,
+    category: place.category,
+    ward: place.ward,
+    latitude: place.latitude,
+    longitude: place.longitude,
+    address: place.address,
+    nearest_station: place.nearestStation,
+    age_min: place.ageMin,
+    age_max: place.ageMax,
+    indoor: place.indoor,
+    rainy_day: place.rainyDay,
+    free_entry: place.freeEntry,
+    stroller_score: place.strollerScore,
+    diaper_score: place.diaperScore,
+    parking_score: place.parkingScore,
+    play_score: place.playScore,
+    description: place.description,
+    tips: place.tips,
+    image_url: place.imageUrl,
+    created_at: place.createdAt,
+    updated_at: place.updatedAt,
+  };
+}

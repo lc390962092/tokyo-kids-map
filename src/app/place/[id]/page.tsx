@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 export const dynamic = "force-dynamic";
 import { ArrowLeft, Baby, Car, CloudRain, MapPin, Ticket } from "lucide-react";
 import { MapNavButton } from "@/components/place/map-nav-button";
+import { AdminEditPanel } from "@/components/admin/admin-edit-panel";
 import { RatingStars } from "@/components/place/rating-stars";
 import { ReviewSection } from "@/components/place/review-section";
 import { getCategoryLabel } from "@/data/place-options";
@@ -67,8 +68,11 @@ export default async function PlacePage({ params }: PlacePageProps) {
           />
           <div className="grid gap-8 p-5 sm:p-8 lg:grid-cols-[1.2fr_0.8fr]">
             <div>
-              <div className="mb-3 inline-flex rounded-full bg-[#fff0e8] px-3 py-1 text-sm font-black text-[#f27d68]">
-                {getCategoryLabel(place.category)} · {place.ward}
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <span className="inline-flex rounded-full bg-[#fff0e8] px-3 py-1 text-sm font-black text-[#f27d68]">
+                  {getCategoryLabel(place.category)} · {place.ward}
+                </span>
+                <AdminEditPanel place={place} />
               </div>
               <h1 className="text-4xl font-black tracking-normal">
                 {place.nameZh}
