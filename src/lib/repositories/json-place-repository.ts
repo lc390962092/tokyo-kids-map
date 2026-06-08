@@ -15,4 +15,11 @@ export class JsonPlaceRepository implements PlaceRepository {
       this.places.find((place) => place.id === id || place.slug === id) ?? null
     );
   }
+
+  async findByIds(ids: string[]): Promise<Place[]> {
+    const idSet = new Set(ids);
+    return this.places
+      .filter((place) => idSet.has(place.id))
+      .sort((a, b) => a.nameZh.localeCompare(b.nameZh, "zh-CN"));
+  }
 }

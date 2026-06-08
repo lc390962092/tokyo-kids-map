@@ -29,6 +29,16 @@ export function getPlaceRepository(): PlaceRepository {
           return jsonRepository.findById(id);
         }
       },
+      async findByIds(ids: string[]) {
+        try {
+          return await supabaseRepository.findByIds(ids);
+        } catch (error) {
+          if (process.env.NODE_ENV === "development") {
+            console.warn(error);
+          }
+          return jsonRepository.findByIds(ids);
+        }
+      },
     };
   }
 

@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 import { ArrowLeft, Baby, Car, CloudRain, MapPin, Ticket } from "lucide-react";
 import { MapNavButton } from "@/components/place/map-nav-button";
 import { AdminEditPanel } from "@/components/admin/admin-edit-panel";
+import { FavoriteButton } from "@/components/favorites/favorite-button";
 import { RatingStars } from "@/components/place/rating-stars";
 import { ReviewSection } from "@/components/place/review-section";
 import { getCategoryLabel } from "@/data/place-options";
@@ -73,6 +74,7 @@ export default async function PlacePage({ params }: PlacePageProps) {
                   {getCategoryLabel(place.category)} · {place.ward}
                 </span>
                 <AdminEditPanel place={place} />
+                <FavoriteButton placeId={place.id} size="sm" />
               </div>
               <h1 className="text-4xl font-black tracking-normal">
                 {place.nameZh}

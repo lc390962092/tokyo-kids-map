@@ -35,4 +35,19 @@ export class SupabasePlaceRepository implements PlaceRepository {
 
     return data ? mapPlaceRecord(data as PlaceRecord) : null;
   }
+
+  async findByIds(ids: string[]): Promise<Place[]> {
+    if (ids.length === 0) return [];
+    const { data, error } = await this.supabase
+      .from("places")
+      .select("*")
+      .in("id", ids)
+      .order("name_zh", { ascending: true });
+
+    if (error) {
+      throw new Error(`Failed to fetch places by ids: ${error.message}`);
+    }
+
+    return ((data ?? []) as PlaceRecord[]).map(mapPlaceRecord);
+  }
 }

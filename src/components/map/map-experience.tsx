@@ -19,6 +19,8 @@ import { createSupabaseClient } from "@/lib/supabase/client";
 import { PlaceFilterPanel } from "@/components/filters/place-filter-panel";
 import { filterPlaces, defaultFilters } from "@/lib/place-filters";
 import type { Place, PlaceFilters } from "@/types/place";
+import { fetchUserFavorites, addFavorite, removeFavorite } from "@/lib/favorites";
+import { WeatherWidget } from "@/components/weather/weather-widget";
 import type { Playdate } from "@/types/playdate";
 import { PlaydateFormModal } from "@/components/playdate/playdate-form-modal";
 import { PlaydateDetailModal } from "@/components/playdate/playdate-detail-modal";
@@ -52,6 +54,7 @@ export function MapExperience({ places }: MapExperienceProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [createFromPlaceId, setCreateFromPlaceId] = useState<string | undefined>();
   const [nearbyPlaydates, setNearbyPlaydates] = useState<Playdate[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const { user, role } = useAuth();
 
   const totalPlaces = places.length;
@@ -65,10 +68,32 @@ export function MapExperience({ places }: MapExperienceProps) {
   useEffect(() => {
     if (user) {
       setShowPlaydates(true);
+      fetchUserFavorites(user.id).then((ids) => setFavoriteIds(new Set(ids)));
     } else {
       setShowPlaydates(false);
+      setFavoriteIds(new Set());
     }
   }, [user]);
+
+  const toggleFavorite = async (placeId: string) => {
+    if (!user) return;
+    const isFav = favoriteIds.has(placeId);
+    try {
+      if (isFav) {
+        await removeFavorite(user.id, placeId);
+        setFavoriteIds((prev) => {
+          const next = new Set(prev);
+          next.delete(placeId);
+          return next;
+        });
+      } else {
+        await addFavorite(user.id, placeId);
+        setFavoriteIds((prev) => new Set(prev).add(placeId));
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "操作失败");
+    }
+  };
 
   useEffect(() => {
     isPlaydatesEnabled().then((enabled) => {
@@ -95,6 +120,8 @@ export function MapExperience({ places }: MapExperienceProps) {
         <section className="relative h-full">
           <KidsMap
             places={filteredPlaces}
+            favoriteIds={favoriteIds}
+            onToggleFavorite={toggleFavorite}
             showPlaydates={showPlaydates && playdatesFeatureEnabled && !featureLoading}
             onSelectPlaydate={setSelectedPlaydate}
             onCreatePlaydateFromPlace={(place) => {
@@ -105,6 +132,13 @@ export function MapExperience({ places }: MapExperienceProps) {
           />
 
           {/* PC版顶部工具栏 */}
+          <div className="absolute left-4 top-4 z-10 hidden items-center gap-2 md:flex">
+            <WeatherWidget
+              onApplyRecommendations={(rec) =>
+                setFilters((prev) => ({ ...prev, ...rec }))
+              }
+            />
+          </div>
           <div className="absolute right-4 top-4 z-10 hidden items-center gap-2 md:flex">
             {user && playdatesFeatureEnabled && !featureLoading && (
               <>
@@ -180,11 +214,18 @@ export function MapExperience({ places }: MapExperienceProps) {
               <div className="text-base font-black text-[#2c3834]">
                 东京溜娃地图
               </div>
-              <div className="text-xs font-bold text-[#8a6b5e]">
-                Tokyo Kids Map · {filteredPlaces.length} 个地点
-                {pendingGeoCount > 0 && (
-                  <span className="ml-1.5 text-[#ff8c73]">· {pendingGeoCount} 个待定位</span>
-                )}
+              <div className="flex flex-wrap items-center gap-1">
+                <span className="text-xs font-bold text-[#8a6b5e]">
+                  Tokyo Kids Map · {filteredPlaces.length} 个地点
+                  {pendingGeoCount > 0 && (
+                    <span className="ml-1.5 text-[#ff8c73]">· {pendingGeoCount} 个待定位</span>
+                  )}
+                </span>
+                <WeatherWidget
+                  onApplyRecommendations={(rec) =>
+                    setFilters((prev) => ({ ...prev, ...rec }))
+                  }
+                />
               </div>
             </div>
             <div className="flex items-center gap-2">

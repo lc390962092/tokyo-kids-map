@@ -2,17 +2,22 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar, MapPin, Users, X } from "lucide-react";
+import { Calendar, MapPin, Users, X, Heart, ArrowRight } from "lucide-react";
+import Link from "next/link";
 import { BackButton } from "@/components/ui/back-button";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { fetchMyPlaydates, cancelPlaydate, cancelResponse, fetchUnreadResponseCount } from "@/lib/playdates";
+import { fetchUserFavorites } from "@/lib/favorites";
+import { getPlaceRepository } from "@/lib/repositories";
 import type { PlaydateWithResponses } from "@/types/playdate";
+import type { Place } from "@/types/place";
 
 export default function MemberPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [created, setCreated] = useState<PlaydateWithResponses[]>([]);
   const [joined, setJoined] = useState<PlaydateWithResponses[]>([]);
+  const [favorites, setFavorites] = useState<Place[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -27,13 +32,20 @@ export default function MemberPage() {
   const load = useCallback(async () => {
     if (!user) return;
     setIsLoading(true);
-    const [{ created, joined }, unread] = await Promise.all([
+    const [{ created, joined }, unread, favIds] = await Promise.all([
       fetchMyPlaydates(user.id),
       fetchUnreadResponseCount(user.id),
+      fetchUserFavorites(user.id),
     ]);
     setCreated(created);
     setJoined(joined);
     setUnreadCount(unread);
+    if (favIds.length > 0) {
+      const favPlaces = await getPlaceRepository().findByIds(favIds);
+      setFavorites(favPlaces);
+    } else {
+      setFavorites([]);
+    }
     setIsLoading(false);
   }, [user]);
 
@@ -106,6 +118,35 @@ export default function MemberPage() {
                   onRefresh={load}
                 />
               ))}
+          </div>
+        </section>
+
+        <section className="mt-8">
+          <h2 className="text-lg font-black text-[#2c3834]">我的收藏</h2>
+          <div className="mt-3 space-y-3">
+            {favorites.length === 0 && (
+              <p className="text-sm text-[#c4a99b]">还没有收藏任何地点</p>
+            )}
+            {favorites.map((place) => (
+              <Link
+                key={place.id}
+                href={`/place/${place.id}`}
+                className="flex items-center gap-3 rounded-2xl border border-[#ffe0ce] bg-white p-3 shadow-sm transition hover:bg-[#fffaf4]"
+              >
+                <div
+                  className="h-14 w-14 shrink-0 rounded-xl bg-cover bg-center"
+                  style={{ backgroundImage: `url(${place.imageUrl})` }}
+                />
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate font-black text-[#2c3834]">{place.nameZh}</h3>
+                  <p className="text-xs text-[#76584e]">
+                    {place.ward} · {place.category}
+                  </p>
+                </div>
+                <Heart className="h-4 w-4 shrink-0 text-red-400" fill="currentColor" />
+                <ArrowRight className="h-4 w-4 shrink-0 text-[#c4a99b]" />
+              </Link>
+            ))}
           </div>
         </section>
       </div>

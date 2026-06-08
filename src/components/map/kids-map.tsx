@@ -15,6 +15,8 @@ type KidsMapProps = {
   onSelectPlaydate?: (playdate: Playdate) => void;
   onCreatePlaydateFromPlace?: (place: Place) => void;
   onPlaydatesLoaded?: (playdates: Playdate[]) => void;
+  favoriteIds?: Set<string>;
+  onToggleFavorite?: (placeId: string) => void;
 };
 
 const tokyoCenter: [number, number] = [139.781, 35.748];
@@ -45,6 +47,8 @@ export default function KidsMap({
   onSelectPlaydate,
   onCreatePlaydateFromPlace,
   onPlaydatesLoaded,
+  favoriteIds,
+  onToggleFavorite,
 }: KidsMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
@@ -54,6 +58,10 @@ export default function KidsMap({
   placesRef.current = places;
   const onCreatePlaydateRef = useRef(onCreatePlaydateFromPlace);
   onCreatePlaydateRef.current = onCreatePlaydateFromPlace;
+  const favoriteIdsRef = useRef(favoriteIds);
+  favoriteIdsRef.current = favoriteIds;
+  const onToggleFavoriteRef = useRef(onToggleFavorite);
+  onToggleFavoriteRef.current = onToggleFavorite;
   const [mapLoaded, setMapLoaded] = useState(false);
 
   const boundsKey = useMemo(
@@ -209,7 +217,14 @@ export default function KidsMap({
           const popup = new maplibregl.Popup({
             offset: Math.round(14 * scale),
             closeButton: true,
-          }).setDOMContent(createPopupContent(place, onCreatePlaydateRef.current));
+          }).setDOMContent(
+            createPopupContent(
+              place,
+              onCreatePlaydateRef.current,
+              favoriteIdsRef.current?.has(place.id) ?? false,
+              onToggleFavoriteRef.current,
+            ),
+          );
 
           const marker = new maplibregl.Marker({ element: markerElement })
             .setLngLat([place.longitude, place.latitude])
@@ -345,6 +360,8 @@ export default function KidsMap({
 function createPopupContent(
   place: Place,
   onCreatePlaydate?: (place: Place) => void,
+  isFavorited?: boolean,
+  onToggleFavorite?: (placeId: string) => void,
 ) {
   const popupContent = document.createElement("div");
   popupContent.className = "w-64 overflow-hidden rounded-[18px] bg-white";
@@ -357,8 +374,31 @@ function createPopupContent(
   body.className = "space-y-2 p-4";
 
   const meta = document.createElement("div");
-  meta.className = "text-xs font-bold text-[#f27d68]";
-  meta.textContent = `${getCategoryLabel(place.category)} · ${place.ward}`;
+  meta.className = "flex items-center justify-between";
+
+  const metaText = document.createElement("span");
+  metaText.className = "text-xs font-bold text-[#f27d68]";
+  metaText.textContent = `${getCategoryLabel(place.category)} · ${place.ward}`;
+  meta.append(metaText);
+
+  if (onToggleFavorite) {
+    const favBtn = document.createElement("button");
+    favBtn.type = "button";
+    favBtn.title = isFavorited ? "取消收藏" : "收藏";
+    favBtn.className = `grid h-7 w-7 place-items-center rounded-full transition ${isFavorited ? "bg-red-50 text-red-500" : "bg-[#fff0e8] text-[#c4a99b]"}`;
+    favBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="${isFavorited ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`;
+    favBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onToggleFavorite(place.id);
+      // Optimistically update button visual
+      const newFav = !favBtn.classList.contains("bg-red-50");
+      favBtn.className = `grid h-7 w-7 place-items-center rounded-full transition ${newFav ? "bg-red-50 text-red-500" : "bg-[#fff0e8] text-[#c4a99b]"}`;
+      favBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="${newFav ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`;
+      favBtn.title = newFav ? "取消收藏" : "收藏";
+    });
+    meta.append(favBtn);
+  }
 
   const title = document.createElement("div");
   title.className = "text-lg font-black text-[#2c3834]";
