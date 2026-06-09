@@ -14,6 +14,7 @@ type PlaceFilterPanelProps = {
   pendingGeoCount?: number;
   nearbyPlaydates?: Playdate[];
   onSelectPlaydate?: (playdate: Playdate) => void;
+  headerSlot?: ReactNode;
 };
 
 export function PlaceFilterPanel({
@@ -24,6 +25,7 @@ export function PlaceFilterPanel({
   pendingGeoCount = 0,
   nearbyPlaydates = [],
   onSelectPlaydate,
+  headerSlot,
 }: PlaceFilterPanelProps) {
   const toggleCategory = (category: PlaceCategory) => {
     onChange({
@@ -63,6 +65,7 @@ export function PlaceFilterPanel({
               <span className="ml-1 text-xs text-[#c4a99b]">(共 {totalPlaces} 条)</span>
             )}
           </p>
+          {headerSlot}
         </div>
         <button
           type="button"

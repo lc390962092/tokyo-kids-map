@@ -114,6 +114,14 @@ export function MapExperience({ places }: MapExperienceProps) {
             pendingGeoCount={pendingGeoCount}
             nearbyPlaydates={nearbyPlaydates}
             onSelectPlaydate={setSelectedPlaydate}
+            headerSlot={
+              <WeatherWidget
+                onApplyRecommendations={(rec) =>
+                  setFilters((prev) => ({ ...prev, ...rec }))
+                }
+                onReset={() => setFilters(defaultFilters)}
+              />
+            }
           />
         </div>
 
@@ -132,13 +140,6 @@ export function MapExperience({ places }: MapExperienceProps) {
           />
 
           {/* PC版顶部工具栏 */}
-          <div className="absolute left-4 top-4 z-10 hidden items-center gap-2 md:flex">
-            <WeatherWidget
-              onApplyRecommendations={(rec) =>
-                setFilters((prev) => ({ ...prev, ...rec }))
-              }
-            />
-          </div>
           <div className="absolute right-4 top-4 z-10 hidden items-center gap-2 md:flex">
             {user && playdatesFeatureEnabled && !featureLoading && (
               <>
@@ -214,18 +215,11 @@ export function MapExperience({ places }: MapExperienceProps) {
               <div className="text-base font-black text-[#2c3834]">
                 东京溜娃地图
               </div>
-              <div className="flex flex-wrap items-center gap-1">
-                <span className="text-xs font-bold text-[#8a6b5e]">
-                  Tokyo Kids Map · {filteredPlaces.length} 个地点
-                  {pendingGeoCount > 0 && (
-                    <span className="ml-1.5 text-[#ff8c73]">· {pendingGeoCount} 个待定位</span>
-                  )}
-                </span>
-                <WeatherWidget
-                  onApplyRecommendations={(rec) =>
-                    setFilters((prev) => ({ ...prev, ...rec }))
-                  }
-                />
+              <div className="text-xs font-bold text-[#8a6b5e]">
+                Tokyo Kids Map · {filteredPlaces.length} 个地点
+                {pendingGeoCount > 0 && (
+                  <span className="ml-1.5 text-[#ff8c73]">· {pendingGeoCount} 个待定位</span>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
