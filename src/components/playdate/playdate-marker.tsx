@@ -17,10 +17,13 @@ export function createPlaydateMarker({
   onClick,
   isMine = false,
 }: PlaydateMarkerProps): maplibregl.Marker {
-  const el = document.createElement("div");
-  el.className = "relative flex h-10 w-10 cursor-pointer items-center justify-center";
-  el.style.zIndex = "999";
-  el.style.position = "relative";
+  const el = document.createElement("button");
+  el.type = "button";
+  el.className =
+    "relative flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0";
+  el.style.zIndex = "10";
+  el.setAttribute("aria-label", "约伴活动");
+
   const color = isMine ? "#4a8c4a" : "#ff8c73";
   // Custom slower pulse animation (3.5s cycle)
   const pulseId = `pulse-${Math.random().toString(36).slice(2, 8)}`;
@@ -34,32 +37,25 @@ export function createPlaydateMarker({
   `;
   document.head.appendChild(style);
   el.innerHTML = `
-    <span class="absolute inline-flex h-full w-full rounded-full opacity-75" style="background-color: ${color}; animation: ${pulseId} 3.5s ease-in-out infinite;"></span>
-    <span class="relative inline-flex h-4 w-4 rounded-full ring-2 ring-white" style="background-color: ${color}"></span>
+    <span class="pointer-events-none absolute inline-flex h-10 w-10 rounded-full opacity-75" style="background-color: ${color}; animation: ${pulseId} 3.5s ease-in-out infinite;"></span>
+    <span class="pointer-events-none relative inline-flex h-4 w-4 rounded-full ring-2 ring-white" style="background-color: ${color}"></span>
   `;
-
-  // Slightly offset to avoid overlapping with place markers at exact same location
-  const offsetLat = 0.00002;
 
   const marker = new maplibregl.Marker({
     element: el,
     anchor: "center",
+    offset: [0, -6],
   })
-    .setLngLat([playdate.longitude, playdate.latitude + offsetLat])
+    .setLngLat([playdate.longitude, playdate.latitude])
     .addTo(map);
-
-  // Ensure playdate markers render above place markers by setting z-index on the outer container
-  const outerEl = marker.getElement();
-  if (outerEl) {
-    outerEl.style.zIndex = "999";
-  }
 
   // Popup content
   const popup = new maplibregl.Popup({
-    offset: 12,
+    offset: 14,
     closeButton: false,
+    closeOnClick: true,
     className: "rounded-2xl",
-  }).setHTML(createPopupHTML(playdate));
+  }).setDOMContent(createPopupContent(playdate, onClick));
 
   el.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -71,7 +67,10 @@ export function createPlaydateMarker({
   return marker;
 }
 
-function createPopupHTML(playdate: Playdate): string {
+function createPopupContent(
+  playdate: Playdate,
+  onClick?: (playdate: Playdate) => void,
+): HTMLElement {
   const meetAt = new Date(playdate.meet_at);
   const dateStr = meetAt.toLocaleDateString("zh-CN", {
     month: "short",
@@ -82,25 +81,38 @@ function createPopupHTML(playdate: Playdate): string {
     minute: "2-digit",
   });
 
-  return `
-    <div class="w-56 overflow-hidden rounded-2xl bg-white p-4 shadow-xl">
-      <div class="inline-block rounded-full bg-[#ff8c73] px-2 py-0.5 text-[10px] font-black text-white">约伴</div>
-      <div class="mt-1 text-xs font-bold text-[#8a6b5e]">${dateStr} ${timeStr}</div>
-      <div class="mt-1 text-base font-black text-[#2c3834] line-clamp-2">${escapeHtml(
-        playdate.title,
-      )}</div>
-      <p class="mt-1 text-xs text-[#76584e] line-clamp-2">${escapeHtml(
-        playdate.description || "",
-      )}</p>
-      <button
-        type="button"
-        class="mt-3 w-full rounded-full bg-[#ff8c73] px-3 py-2 text-xs font-black text-white"
-        data-playdate-id="${playdate.id}"
-      >
-        查看详情
-      </button>
-    </div>
+  const wrapper = document.createElement("div");
+  wrapper.className = "w-56 overflow-hidden rounded-2xl bg-white p-4 shadow-xl";
+  wrapper.innerHTML = `
+    <div class="inline-block rounded-full bg-[#ff8c73] px-2 py-0.5 text-[10px] font-black text-white">约伴</div>
+    <div class="mt-1 text-xs font-bold text-[#8a6b5e]">${dateStr} ${timeStr}</div>
+    <div class="mt-1 text-base font-black text-[#2c3834] line-clamp-2">${escapeHtml(
+      playdate.title,
+    )}</div>
+    <p class="mt-1 text-xs text-[#76584e] line-clamp-2">${escapeHtml(
+      playdate.description || "",
+    )}</p>
+    <button
+      type="button"
+      class="mt-3 w-full rounded-full bg-[#ff8c73] px-3 py-2 text-xs font-black text-white"
+      data-playdate-id="${playdate.id}"
+    >
+      查看详情
+    </button>
   `;
+
+  const btn = wrapper.querySelector(
+    `button[data-playdate-id="${playdate.id}"]`,
+  ) as HTMLButtonElement | null;
+  if (btn && onClick) {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onClick(playdate);
+    });
+  }
+
+  return wrapper;
 }
 
 function escapeHtml(text: string): string {

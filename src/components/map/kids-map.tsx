@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl, { type Map, type Marker } from "maplibre-gl";
-import { Crosshair } from "lucide-react";
+import { Crosshair, Plus, Minus } from "lucide-react";
 import { getCategoryColor, getCategoryLabel } from "@/data/place-options";
 import { PlaydateLayer } from "@/components/playdate/playdate-layer";
 import type { Place } from "@/types/place";
@@ -20,6 +20,19 @@ type KidsMapProps = {
 };
 
 const tokyoCenter: [number, number] = [139.781, 35.748];
+
+const categoryEmoji: Record<Place["category"], string> = {
+  park: "🌳",
+  library: "📚",
+  children_center: "🧸",
+  zoo: "🦁",
+  aquarium: "🐠",
+  science_museum: "🔬",
+  indoor_play: "🎪",
+  museum: "🏛️",
+  landmark: "🗼",
+  river: "🌊",
+};
 
 function createGeoJSON(places: Place[]): GeoJSON.FeatureCollection {
   return {
@@ -63,11 +76,7 @@ export default function KidsMap({
   const onToggleFavoriteRef = useRef(onToggleFavorite);
   onToggleFavoriteRef.current = onToggleFavorite;
   const [mapLoaded, setMapLoaded] = useState(false);
-
-  const boundsKey = useMemo(
-    () => places.map((place) => place.id).join(":"),
-    [places],
-  );
+  const initialFitDoneRef = useRef(false);
 
   // Initialize map + source + layers (once)
   useEffect(() => {
@@ -94,11 +103,6 @@ export default function KidsMap({
     });
 
     mapRef.current = map;
-
-    map.addControl(
-      new maplibregl.NavigationControl({ visualizePitch: false }),
-      "bottom-right",
-    );
 
     map.once("load", () => {
       setMapLoaded(true);
@@ -127,8 +131,8 @@ export default function KidsMap({
             30,
             "#e66b55",
           ],
-          "circle-radius": ["step", ["get", "point_count"], 20, 10, 25, 30, 30],
-          "circle-stroke-width": 2,
+          "circle-radius": ["step", ["get", "point_count"], 24, 10, 30, 30, 36],
+          "circle-stroke-width": 3,
           "circle-stroke-color": "#fff",
         },
       });
@@ -141,7 +145,7 @@ export default function KidsMap({
         layout: {
           "text-field": "{point_count}",
           "text-font": ["Noto Sans Regular"],
-          "text-size": 14,
+          "text-size": 15,
         },
         paint: {
           "text-color": "#ffffff",
@@ -159,11 +163,16 @@ export default function KidsMap({
         const source = map.getSource("places") as maplibregl.GeoJSONSource;
 
         try {
-          const zoom = await source.getClusterExpansionZoom(clusterId);
+          const currentZoom = map.getZoom();
+          const expansionZoom = await source.getClusterExpansionZoom(clusterId);
+          const targetZoom = Math.min(
+            Math.max(currentZoom + 1.5, expansionZoom),
+            15,
+          );
           map.easeTo({
             center: (feature.geometry as GeoJSON.Point)
               .coordinates as [number, number],
-            zoom: zoom || 14,
+            zoom: targetZoom,
           });
         } catch {
           map.easeTo({
@@ -184,12 +193,10 @@ export default function KidsMap({
         markersRef.current = [];
 
         const zoom = map.getZoom();
-        const scale = Math.max(
-          0.55,
-          Math.min(1.2, 0.45 + (zoom - 8) * 0.08),
-        );
-        const size = Math.round(44 * scale);
-        const fontSize = Math.max(10, Math.round(16 * scale));
+        // Visible marker: 44-56px; touch target always at least 56px
+        const visibleSize = Math.round(Math.max(44, Math.min(56, 36 + (zoom - 10) * 4)));
+        const touchSize = Math.max(56, visibleSize + 16);
+        const fontSize = Math.max(18, Math.round(visibleSize * 0.45));
 
         const uniqueIds = new Set<string>();
         features.forEach((f) => {
@@ -202,21 +209,43 @@ export default function KidsMap({
           const place = currentPlaces.find((p) => p.id === id);
           if (!place) return;
 
-          const markerElement = document.createElement("button");
-          markerElement.type = "button";
-          markerElement.className =
-            "grid place-items-center rounded-full border-2 border-white font-black text-white shadow-lg transition active:scale-95 cursor-pointer";
-          markerElement.style.backgroundColor = getCategoryColor(
-            place.category,
-          );
-          markerElement.style.width = `${size}px`;
-          markerElement.style.height = `${size}px`;
-          markerElement.style.fontSize = `${fontSize}px`;
-          markerElement.textContent = place.freeEntry ? "免" : "¥";
+          const isFavorited = favoriteIdsRef.current?.has(place.id) ?? false;
+          const color = getCategoryColor(place.category);
+          const emoji = categoryEmoji[place.category] ?? "📍";
+
+          const wrapper = document.createElement("button");
+          wrapper.type = "button";
+          wrapper.className =
+            "group relative grid place-items-center rounded-full border-0 bg-transparent p-0";
+          wrapper.style.width = `${touchSize}px`;
+          wrapper.style.height = `${touchSize}px`;
+          wrapper.style.cursor = "pointer";
+
+          const inner = document.createElement("span");
+          inner.className =
+            "relative grid place-items-center rounded-full border-2 border-white font-black text-white shadow-lg transition-transform duration-150 group-hover:scale-110 group-active:scale-95";
+          inner.style.backgroundColor = color;
+          inner.style.width = `${visibleSize}px`;
+          inner.style.height = `${visibleSize}px`;
+          inner.style.fontSize = `${fontSize}px`;
+          inner.style.lineHeight = "1";
+          inner.textContent = emoji;
+
+          if (isFavorited) {
+            const badge = document.createElement("span");
+            badge.className =
+              "absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white shadow-sm";
+            badge.textContent = "♥";
+            inner.append(badge);
+          }
+
+          wrapper.append(inner);
 
           const popup = new maplibregl.Popup({
-            offset: Math.round(14 * scale),
+            offset: Math.round(visibleSize / 2 + 6),
             closeButton: true,
+            closeOnClick: true,
+            maxWidth: "280px",
           }).setDOMContent(
             createPopupContent(
               place,
@@ -226,12 +255,12 @@ export default function KidsMap({
             ),
           );
 
-          const marker = new maplibregl.Marker({ element: markerElement })
+          const marker = new maplibregl.Marker({ element: wrapper })
             .setLngLat([place.longitude, place.latitude])
             .setPopup(popup)
             .addTo(map);
 
-          markerElement.addEventListener("click", (e) => {
+          wrapper.addEventListener("click", (e) => {
             e.stopPropagation();
             marker.togglePopup();
           });
@@ -260,7 +289,7 @@ export default function KidsMap({
     };
   }, []);
 
-  // Update source data when places change
+  // Update source data when places change (filter changes do not reset view)
   useEffect(() => {
     placesRef.current = places;
     const map = mapRef.current;
@@ -274,28 +303,29 @@ export default function KidsMap({
     }
   }, [places]);
 
-  // Fly to selected place or fit bounds
+  // Initial fit bounds (only once)
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map || places.length === 0) return;
-
-    const selected = selectedPlaceId
-      ? places.find((place) => place.id === selectedPlaceId)
-      : undefined;
-
-    if (selected) {
-      map.flyTo({
-        center: [selected.longitude, selected.latitude],
-        zoom: 14,
-        essential: true,
-      });
-      return;
-    }
+    if (!mapLoaded || places.length === 0 || initialFitDoneRef.current) return;
+    if (selectedPlaceId) return; // handled by fly effect below
 
     const bounds = new maplibregl.LngLatBounds();
     places.forEach((place) => bounds.extend([place.longitude, place.latitude]));
-    map.fitBounds(bounds, { padding: 56, maxZoom: 13, duration: 500 });
-  }, [boundsKey, places, selectedPlaceId]);
+    mapRef.current?.fitBounds(bounds, { padding: 56, maxZoom: 13, duration: 600 });
+    initialFitDoneRef.current = true;
+  }, [mapLoaded, places, selectedPlaceId]);
+
+  // Fly to selected place when prop changes
+  useEffect(() => {
+    if (!mapLoaded || !selectedPlaceId) return;
+    const place = places.find((p) => p.id === selectedPlaceId);
+    if (!place) return;
+    mapRef.current?.flyTo({
+      center: [place.longitude, place.latitude],
+      zoom: 15,
+      essential: true,
+    });
+    initialFitDoneRef.current = true;
+  }, [mapLoaded, selectedPlaceId, places]);
 
   const handleLocate = () => {
     const map = mapRef.current;
@@ -330,20 +360,67 @@ export default function KidsMap({
     );
   };
 
+  const handleZoomIn = () => {
+    mapRef.current?.zoomIn({ duration: 250 });
+  };
+
+  const handleZoomOut = () => {
+    mapRef.current?.zoomOut({ duration: 250 });
+  };
+
+  const handleFitAll = () => {
+    const map = mapRef.current;
+    if (!map || placesRef.current.length === 0) return;
+    const bounds = new maplibregl.LngLatBounds();
+    placesRef.current.forEach((place) =>
+      bounds.extend([place.longitude, place.latitude]),
+    );
+    map.fitBounds(bounds, { padding: 56, maxZoom: 13, duration: 500 });
+  };
+
   return (
     <div className="relative h-full min-h-[520px] overflow-hidden bg-[#d9f1ea]">
       <div ref={containerRef} className="h-full w-full" />
       <div className="pointer-events-none absolute left-4 top-4 hidden rounded-full bg-white/90 px-4 py-2 text-sm font-bold text-[#567066] shadow-sm backdrop-blur md:block">
         OpenStreetMap · MapLibre GL
       </div>
+      <div className="absolute bottom-6 left-4 z-10 flex flex-col gap-2">
+        <button
+          type="button"
+          onClick={handleZoomIn}
+          className="grid h-11 w-11 place-items-center rounded-full bg-white text-[#ff8c73] shadow-lg transition hover:scale-105 active:scale-95"
+          aria-label="放大"
+          title="放大"
+        >
+          <Plus className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          onClick={handleZoomOut}
+          className="grid h-11 w-11 place-items-center rounded-full bg-white text-[#ff8c73] shadow-lg transition hover:scale-105 active:scale-95"
+          aria-label="缩小"
+          title="缩小"
+        >
+          <Minus className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          onClick={handleLocate}
+          className="grid h-12 w-12 place-items-center rounded-full bg-white text-[#ff8c73] shadow-lg transition hover:scale-105 active:scale-95"
+          aria-label="我的位置"
+          title="我的位置"
+        >
+          <Crosshair className="h-5 w-5" />
+        </button>
+      </div>
       <button
         type="button"
-        onClick={handleLocate}
-        className="absolute bottom-6 left-4 z-10 grid h-12 w-12 place-items-center rounded-full bg-white text-[#ff8c73] shadow-lg transition hover:scale-105 active:scale-95"
-        aria-label="我的位置"
-        title="我的位置"
+        onClick={handleFitAll}
+        className="absolute bottom-6 right-4 z-10 rounded-full bg-white px-3 py-2 text-xs font-bold text-[#76584e] shadow-lg transition hover:scale-105 active:scale-95"
+        aria-label="显示全部"
+        title="显示全部"
       >
-        <Crosshair className="h-5 w-5" />
+        显示全部
       </button>
       {mapLoaded && showPlaydates && mapRef.current && (
         <PlaydateLayer
@@ -360,14 +437,14 @@ export default function KidsMap({
 function createPopupContent(
   place: Place,
   onCreatePlaydate?: (place: Place) => void,
-  isFavorited?: boolean,
+  isFavorited = false,
   onToggleFavorite?: (placeId: string) => void,
 ) {
   const popupContent = document.createElement("div");
   popupContent.className = "w-64 overflow-hidden rounded-[18px] bg-white";
 
   const image = document.createElement("div");
-  image.className = "h-20 bg-cover bg-center";
+  image.className = "h-24 bg-cover bg-center";
   image.style.backgroundImage = `url("${place.imageUrl}")`;
 
   const body = document.createElement("div");
@@ -385,17 +462,12 @@ function createPopupContent(
     const favBtn = document.createElement("button");
     favBtn.type = "button";
     favBtn.title = isFavorited ? "取消收藏" : "收藏";
-    favBtn.className = `grid h-7 w-7 place-items-center rounded-full transition ${isFavorited ? "bg-red-50 text-red-500" : "bg-[#fff0e8] text-[#c4a99b]"}`;
-    favBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="${isFavorited ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`;
+    favBtn.className = `grid h-8 w-8 place-items-center rounded-full transition ${isFavorited ? "bg-red-50 text-red-500" : "bg-[#fff0e8] text-[#c4a99b]"}`;
+    favBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="${isFavorited ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`;
     favBtn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
       onToggleFavorite(place.id);
-      // Optimistically update button visual
-      const newFav = !favBtn.classList.contains("bg-red-50");
-      favBtn.className = `grid h-7 w-7 place-items-center rounded-full transition ${newFav ? "bg-red-50 text-red-500" : "bg-[#fff0e8] text-[#c4a99b]"}`;
-      favBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="${newFav ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`;
-      favBtn.title = newFav ? "取消收藏" : "收藏";
     });
     meta.append(favBtn);
   }
@@ -412,21 +484,46 @@ function createPopupContent(
   age.className = "text-sm font-semibold text-[#5a7068]";
   age.textContent = `推荐 ${place.ageMin}-${place.ageMax} 岁`;
 
+  const scoreRow = document.createElement("div");
+  scoreRow.className = "flex flex-wrap gap-1.5";
+  const scoreChips = [
+    { label: "放电", score: place.playScore },
+    { label: "婴儿车", score: place.strollerScore },
+    { label: "停车", score: place.parkingScore },
+    { label: "换尿布", score: place.diaperScore },
+  ];
+  scoreChips.forEach(({ label, score }) => {
+    const chip = document.createElement("span");
+    chip.className =
+      "inline-flex items-center rounded-full bg-[#fff5ef] px-2 py-0.5 text-[10px] font-bold text-[#76584e]";
+    chip.textContent = `${label} ${"★".repeat(score)}${"☆".repeat(5 - score)}`;
+    scoreRow.append(chip);
+  });
+
   const actions = document.createElement("div");
-  actions.className = "flex gap-2";
+  actions.className = "flex flex-wrap gap-2 pt-1";
 
   const link = document.createElement("a");
   link.className =
-    "inline-flex items-center gap-1 rounded-full bg-[#ff8c73] px-4 py-2 text-sm font-bold text-white";
+    "inline-flex flex-1 items-center justify-center gap-1 rounded-full bg-[#ff8c73] px-3 py-2 text-sm font-bold text-white";
   link.href = `/place/${place.id}`;
   link.textContent = "查看详情";
   actions.append(link);
+
+  const navBtn = document.createElement("a");
+  navBtn.className =
+    "inline-flex items-center justify-center gap-1 rounded-full border border-[#ff8c73] bg-white px-3 py-2 text-sm font-bold text-[#ff8c73]";
+  navBtn.href = getNavigationUrl(place.latitude, place.longitude, place.nameZh);
+  navBtn.target = "_blank";
+  navBtn.rel = "noopener noreferrer";
+  navBtn.textContent = "导航";
+  actions.append(navBtn);
 
   if (onCreatePlaydate) {
     const playdateBtn = document.createElement("button");
     playdateBtn.type = "button";
     playdateBtn.className =
-      "inline-flex items-center gap-1 rounded-full border border-[#ff8c73] bg-white px-3 py-2 text-sm font-bold text-[#ff8c73]";
+      "inline-flex w-full items-center justify-center gap-1 rounded-full border border-[#4a8c4a] bg-white px-3 py-2 text-sm font-bold text-[#4a8c4a]";
     playdateBtn.textContent = "发起约伴";
     playdateBtn.addEventListener("click", (e) => {
       e.preventDefault();
@@ -436,8 +533,18 @@ function createPopupContent(
     actions.append(playdateBtn);
   }
 
-  body.append(meta, title, subtitle, age, actions);
+  body.append(meta, title, subtitle, age, scoreRow, actions);
   popupContent.append(image, body);
 
   return popupContent;
+}
+
+function getNavigationUrl(lat: number, lng: number, label: string): string {
+  if (
+    typeof window !== "undefined" &&
+    /iPad|iPhone|iPod/.test(navigator.userAgent)
+  ) {
+    return `https://maps.apple.com/?q=${encodeURIComponent(label)}&ll=${lat},${lng}`;
+  }
+  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 }
