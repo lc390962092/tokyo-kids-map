@@ -112,8 +112,8 @@ export default function KidsMap({
         type: "geojson",
         data: geojson,
         cluster: true,
-        clusterMaxZoom: 14,
-        clusterRadius: 50,
+        clusterMaxZoom: 16,
+        clusterRadius: 40,
       });
 
       map.addLayer({
@@ -163,22 +163,32 @@ export default function KidsMap({
         const source = map.getSource("places") as maplibregl.GeoJSONSource;
 
         try {
-          const currentZoom = map.getZoom();
-          const expansionZoom = await source.getClusterExpansionZoom(clusterId);
-          const targetZoom = Math.min(
-            Math.max(currentZoom + 1.5, expansionZoom),
-            15,
+          // Fit to the actual children so the user always sees what was inside
+          // the cluster after it disappears.
+          const leaves = await source.getClusterLeaves(clusterId, 1000, 0);
+          if (leaves.length === 0) return;
+
+          const bounds = new maplibregl.LngLatBounds();
+          leaves.forEach((leaf) => {
+            const coords = (leaf.geometry as GeoJSON.Point)
+              .coordinates as [number, number];
+            bounds.extend(coords);
+          });
+          bounds.extend(
+            (feature.geometry as GeoJSON.Point).coordinates as [number, number],
           );
-          map.easeTo({
-            center: (feature.geometry as GeoJSON.Point)
-              .coordinates as [number, number],
-            zoom: targetZoom,
+
+          map.fitBounds(bounds, {
+            padding: { top: 160, bottom: 160, left: 80, right: 80 },
+            maxZoom: 16,
+            duration: 450,
           });
         } catch {
           map.easeTo({
             center: (feature.geometry as GeoJSON.Point)
               .coordinates as [number, number],
-            zoom: 14,
+            zoom: Math.min(map.getZoom() + 2, 16),
+            duration: 400,
           });
         }
       });
@@ -269,13 +279,23 @@ export default function KidsMap({
         });
       };
 
-      const handleMoveEnd = () => updateMarkers();
-      const handleData = (e: maplibregl.MapSourceDataEvent) => {
-        if (e.sourceId === "places" && e.isSourceLoaded) updateMarkers();
+      let updatePending = false;
+      const scheduleUpdateMarkers = () => {
+        if (updatePending) return;
+        updatePending = true;
+        requestAnimationFrame(() => {
+          updatePending = false;
+          if (!mapRef.current) return;
+          updateMarkers();
+        });
       };
 
-      map.on("moveend", handleMoveEnd);
-      map.on("data", handleData);
+      map.on("moveend", scheduleUpdateMarkers);
+      map.on("data", (e: maplibregl.MapSourceDataEvent) => {
+        if (e.sourceId === "places" && e.isSourceLoaded)
+          scheduleUpdateMarkers();
+      });
+      map.on("idle", scheduleUpdateMarkers);
       updateMarkers();
     });
 
