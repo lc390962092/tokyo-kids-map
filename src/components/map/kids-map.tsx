@@ -226,7 +226,7 @@ export default function KidsMap({
           const wrapper = document.createElement("button");
           wrapper.type = "button";
           wrapper.className =
-            "group relative grid place-items-center rounded-full border-0 bg-transparent p-0";
+            "map-place-marker group relative grid place-items-center rounded-full border-0 bg-transparent p-0";
           wrapper.style.width = `${touchSize}px`;
           wrapper.style.height = `${touchSize}px`;
           wrapper.style.cursor = "pointer";
@@ -254,7 +254,7 @@ export default function KidsMap({
           const popup = new maplibregl.Popup({
             offset: Math.round(visibleSize / 2 + 6),
             closeButton: true,
-            closeOnClick: true,
+            closeOnClick: false,
             maxWidth: "280px",
           }).setDOMContent(
             createPopupContent(
@@ -269,10 +269,6 @@ export default function KidsMap({
             .setLngLat([place.longitude, place.latitude])
             .setPopup(popup)
             .addTo(map);
-
-          wrapper.addEventListener("click", (e) => {
-            e.stopPropagation();
-          });
 
           markersRef.current.push(marker);
         });
@@ -294,6 +290,22 @@ export default function KidsMap({
         if (e.sourceId === "places" && e.isSourceLoaded)
           scheduleUpdateMarkers();
       });
+
+      // Clicking on the blank map canvas closes any open popup, while clicking
+      // a marker or popup content keeps it open.
+      map.on("click", (e: maplibregl.MapMouseEvent) => {
+        if (!(e.originalEvent.target instanceof Element)) return;
+        const target = e.originalEvent.target;
+        const isMarker = target.closest(".map-place-marker");
+        const isPopup = target.closest(".maplibregl-popup");
+        if (!isMarker && !isPopup) {
+          markersRef.current.forEach((m) => {
+            const p = m.getPopup();
+            if (p) p.remove();
+          });
+        }
+      });
+
       updateMarkers();
     });
 
