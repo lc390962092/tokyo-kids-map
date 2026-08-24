@@ -270,11 +270,6 @@ export default function KidsMap({
             .setPopup(popup)
             .addTo(map);
 
-          wrapper.addEventListener("click", (e) => {
-            e.stopPropagation();
-            marker.togglePopup();
-          });
-
           markersRef.current.push(marker);
         });
       };
