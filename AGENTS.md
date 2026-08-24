@@ -266,8 +266,11 @@ A: 確認 `places.id` 有 `DEFAULT gen_random_uuid()`，或代碼已在客戶端
 **Q: 約伴標記沒有出現在地圖上？**
 A: 確認已在 Supabase 執行 `supabase/setup_playdates.sql`，且當前地圖中心 3km 內有未過期的 active 邀約。
 
-**Q: 發起約伴提示權限不足？**
-A: 檢查 RLS policy：`playdates` 的 INSERT 策略要求 `auth.uid() = user_id`，且 payload 中必須帶 `user_id`。
+**Q: 约伴发起提示权限不足？**
+A: 检查 RLS policy：`playdates` 的 INSERT 策略要求 `auth.uid() = user_id`，且 payload 中必须带 `user_id`。
+
+**Q: 忘记密码无法重置或链接失效？**
+A: 项目已接入 Supabase 密码重置：登录页点击「忘记密码」输入邮箱 → 邮件链接跳转到 `/reset-password` → 设置新密码。请确认 Supabase Dashboard → Auth → URL Configuration 的 Site URL 为生产域名（如 `https://tokyo-kids-map.vercel.app`），且邮件模板里的重定向地址正确。
 
 ---
 
