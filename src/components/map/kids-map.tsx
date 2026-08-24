@@ -270,6 +270,10 @@ export default function KidsMap({
             .setPopup(popup)
             .addTo(map);
 
+          wrapper.addEventListener("click", (e) => {
+            e.stopPropagation();
+          });
+
           markersRef.current.push(marker);
         });
       };
@@ -290,7 +294,6 @@ export default function KidsMap({
         if (e.sourceId === "places" && e.isSourceLoaded)
           scheduleUpdateMarkers();
       });
-      map.on("idle", scheduleUpdateMarkers);
       updateMarkers();
     });
 
