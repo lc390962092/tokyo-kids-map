@@ -61,6 +61,7 @@ export function MapExperience({ places }: MapExperienceProps) {
   const [nearbyPlaydates, setNearbyPlaydates] = useState<Playdate[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [sheetExpanded, setSheetExpanded] = useState(false);
+  const initialExpandDone = useRef(false);
   const { user, role } = useAuth();
 
   const totalPlaces = places.length;
@@ -114,6 +115,24 @@ export function MapExperience({ places }: MapExperienceProps) {
     setSelectedPlaceId(place.id);
     setSheetExpanded(false);
   };
+
+  // Auto-expand mobile bottom sheet when URL has active filters
+  useEffect(() => {
+    if (initialExpandDone.current) return;
+    const hasActiveFilters = Boolean(
+      filters.searchText ||
+        filters.ageRange ||
+        filters.categories.length ||
+        filters.features.length ||
+        filters.wards.length ||
+        filters.onlyFavorites ||
+        (filters.sortBy && filters.sortBy !== "relevance"),
+    );
+    if (hasActiveFilters) {
+      setSheetExpanded(true);
+    }
+    initialExpandDone.current = true;
+  }, [filters]);
 
   return (
     <main className="relative h-dvh overflow-hidden bg-[#fffaf4]">
@@ -435,7 +454,7 @@ function MobileBottomSheet({
             ? "flex-wrap overflow-y-auto overflow-x-hidden custom-scroll"
             : "overflow-x-auto scrollbar-hide"
         }`}
-        style={{ height: expanded ? "calc(100% - 80px)" : "220px" }}
+        style={{ height: expanded ? "calc(100dvh - 80px)" : "280px" }}
       >
         {places.length === 0 ? (
           <div className="w-full">
