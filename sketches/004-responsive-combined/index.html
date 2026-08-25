@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tokyo Kids Map - Responsive Combined</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fffaf4',
+              100: '#f6ded2',
+              200: '#f2d8cb',
+              300: '#e5d3c8',
+              400: '#c4a99b',
+              500: '#8a6b5e',
+              600: '#76584e',
+              700: '#3b4a45',
+              800: '#2c3834',
+              accent: '#ff8c73',
+              accentHover: '#f27d68',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif; background: #f6f8f7; color: #2c3834; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .chip { transition: all 0.15s ease; }
+    .chip.active { background: #ff8c73; color: white; border-color: #ff8c73; }
+    .chip:not(.active) { background: white; color: #76584e; border-color: #f2d8cb; }
+    .map-bg { background: linear-gradient(160deg, #e3f0eb 0%, #f8efe8 50%, #e6ece9 100%); }
+    .sheet-transition { transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); }
+    .drag-handle:active { cursor: grabbing; }
+    /* 桌面端列表滚动条美化 */
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #e5d3c8; border-radius: 3px; }
+  </style>
+</head>
+<body class="h-screen w-full overflow-hidden">
+
+  <!-- 桌面端：顶部工具条 -->
+  <header class="hidden lg:flex flex-none bg-white border-b border-brand-100 z-20 flex-col">
+    <div class="px-5 py-3 flex items-center gap-4">
+      <div class="flex items-center gap-2 flex-none">
+        <span class="text-2xl">🗾</span>
+        <div>
+          <h1 class="font-black text-lg leading-tight text-brand-800">东京溜娃地图</h1>
+          <p class="text-xs text-brand-500 font-medium">Tokyo Kids Map</p>
+        </div>
+      </div>
+      <div class="flex-1 relative max-w-md">
+        <svg class="absolute left-3 top-2.5 w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input id="desktop-search" type="text" placeholder="搜索地点、车站、行政区..." class="w-full rounded-full bg-brand-50 border border-transparent focus:bg-white focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 pl-9 pr-4 py-2 text-sm font-medium outline-none transition">
+      </div>
+      <div class="flex items-center gap-2 flex-none">
+        <button id="desktop-fav" class="chip flex items-center gap-1.5 px-3 py-2 rounded-full border text-xs font-bold">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+          只看收藏
+        </button>
+        <select id="desktop-sort" class="rounded-full border border-brand-200 bg-white px-3 py-2 text-xs font-bold text-brand-600 outline-none">
+          <option value="relevance">推荐</option>
+          <option value="rating">评分</option>
+          <option value="name">A-Z</option>
+        </select>
+      </div>
+    </div>
+    <div class="px-5 pb-3 flex gap-5 overflow-x-auto scrollbar-hide">
+      <div class="flex items-center gap-2 flex-none">
+        <span class="text-xs font-black text-brand-700">年龄</span>
+        <div class="flex gap-1.5">
+          <button class="chip desktop-chip rounded-full border px-3 py-1 text-xs font-bold" data-type="age" data-val="0-1">0-1</button>
+          <button class="chip desktop-chip rounded-full border px-3 py-1 text-xs font-bold" data-type="age" data-val="1-3">1-3</button>
+          <button class="chip desktop-chip rounded-full border px-3 py-1 text-xs font-bold" data-type="age" data-val="3-6">3-6</button>
+          <button class="chip desktop-chip rounded-full border px-3 py-1 text-xs font-bold" data-type="age" data-val="6+">6+</button>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 flex-none">
+        <span class="text-xs font-black text-brand-700">分类</span>
+        <div class="flex gap-1.5">
+          <button class="chip desktop-chip rounded-full border px-3 py-1 text-xs font-bold" data-type="category" data-val="park">公园</button>
+          <button class="chip desktop-chip rounded-full border px-3 py-1 text-xs font-bold" data-type="category" data-val="zoo">动物园</button>
+          <button class="chip desktop-chip rounded-full border px-3 py-1 text-xs font-bold" data-type="category" data-val="aquarium">水族馆</button>
+          <button class="chip desktop-chip rounded-full border px-3 py-1 text-xs font-bold" data-type="category" data-val="museum">博物馆</button>
+          <button class="chip desktop-chip rounded-full border px-3 py-1 text-xs font-bold" data-type="category" data-val="indoor_play">室内</button>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 flex-none">
+        <span class="text-xs font-black text-brand-700">特点</span>
+        <div class="flex gap-1.5">
+          <button class="chip desktop-chip rounded-full border px-3 py-1 text-xs font-bold" data-type="feature" data-val="free">免费</button>
+          <button class="chip desktop-chip rounded-full border px-3 py-1 text-xs font-bold" data-type="feature" data-val="rainy_day">雨天</button>
+          <button class="chip desktop-chip rounded-full border px-3 py-1 text-xs font-bold" data-type="feature" data-val="stroller_friendly">推车</button>
+          <button class="chip desktop-chip rounded-full border px-3 py-1 text-xs font-bold" data-type="feature" data-val="parking_easy">停车</button>
+        </div>
+      </div>
+      <button id="desktop-reset" class="text-xs font-bold text-brand-accentHover hover:underline flex-none">重置</button>
+    </div>
+  </header>
+
+  <!-- 移动端：顶部搜索 + 快捷筛选 -->
+  <div class="lg:hidden absolute top-0 left-0 right-0 z-20 p-3 space-y-2 pointer-events-none">
+    <div class="flex gap-2 pointer-events-auto">
+      <div class="flex-1 relative">
+        <svg class="absolute left-3 top-2.5 w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input id="mobile-search" type="text" placeholder="搜索地点、车站、行政区..." class="w-full rounded-full border border-brand-200 bg-white/95 backdrop-blur py-2 pl-9 pr-4 text-sm font-medium shadow-sm outline-none focus:border-brand-accent">
+      </div>
+      <button id="mobile-fav" class="w-10 h-10 rounded-full bg-white/95 border border-brand-200 flex items-center justify-center shadow-sm text-brand-400">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+      </button>
+      <button id="mobile-more" class="w-10 h-10 rounded-full bg-white/95 border border-brand-200 flex items-center justify-center shadow-sm text-brand-600 font-black text-xs">筛选</button>
+    </div>
+    <div class="flex gap-2 overflow-x-auto scrollbar-hide pointer-events-auto pb-1" id="mobile-chips">
+      <button class="chip mobile-chip rounded-full border px-3 py-1.5 text-xs font-bold whitespace-nowrap" data-type="age" data-val="0-1">0-1岁</button>
+      <button class="chip mobile-chip rounded-full border px-3 py-1.5 text-xs font-bold whitespace-nowrap" data-type="age" data-val="1-3">1-3岁</button>
+      <button class="chip mobile-chip rounded-full border px-3 py-1.5 text-xs font-bold whitespace-nowrap" data-type="age" data-val="3-6">3-6岁</button>
+      <button class="chip mobile-chip rounded-full border px-3 py-1.5 text-xs font-bold whitespace-nowrap" data-type="age" data-val="6+">6岁+</button>
+      <button class="chip mobile-chip rounded-full border px-3 py-1.5 text-xs font-bold whitespace-nowrap" data-type="feature" data-val="free">免费</button>
+      <button class="chip mobile-chip rounded-full border px-3 py-1.5 text-xs font-bold whitespace-nowrap" data-type="feature" data-val="rainy_day">雨天</button>
+      <button class="chip mobile-chip rounded-full border px-3 py-1.5 text-xs font-bold whitespace-nowrap" data-type="feature" data-val="stroller_friendly">推车</button>
+      <button class="chip mobile-chip rounded-full border px-3 py-1.5 text-xs font-bold whitespace-nowrap" data-type="feature" data-val="parking_easy">停车</button>
+    </div>
+  </div>
+
+  <!-- 移动端：更多筛选弹窗 -->
+  <div id="mobile-modal" class="lg:hidden absolute inset-0 z-30 hidden bg-black/20 backdrop-blur-sm items-end">
+    <div class="bg-white w-full max-h-[80vh] rounded-t-3xl p-5 flex flex-col">
+      <div class="flex items-center justify-between mb-4 flex-none">
+        <h3 class="font-black text-lg text-brand-800">筛选</h3>
+        <button id="close-mobile-modal" class="w-8 h-8 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center">✕</button>
+      </div>
+      <div class="flex-1 overflow-y-auto space-y-5 pr-1 custom-scroll">
+        <section>
+          <h4 class="text-sm font-black text-brand-700 mb-2">分类</h4>
+          <div class="flex flex-wrap gap-2" id="modal-cats"></div>
+        </section>
+        <section>
+          <h4 class="text-sm font-black text-brand-700 mb-2">年龄</h4>
+          <div class="flex flex-wrap gap-2" id="modal-ages"></div>
+        </section>
+        <section>
+          <h4 class="text-sm font-black text-brand-700 mb-2">特点</h4>
+          <div class="space-y-2" id="modal-feats"></div>
+        </section>
+        <section>
+          <h4 class="text-sm font-black text-brand-700 mb-2">排序</h4>
+          <select id="mobile-sort" class="w-full rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm font-medium text-brand-600">
+            <option value="relevance">综合推荐</option>
+            <option value="rating">评分从高到低</option>
+            <option value="name">名称 A-Z</option>
+          </select>
+        </section>
+      </div>
+      <div class="mt-4 pt-4 border-t border-brand-100 flex gap-3 flex-none">
+        <button id="mobile-reset" class="flex-1 rounded-full border border-brand-200 py-2.5 text-sm font-bold text-brand-600">重置</button>
+        <button id="apply-mobile" class="flex-1 rounded-full bg-brand-accent py-2.5 text-sm font-bold text-white shadow-md">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主体区域 -->
+  <div class="flex-1 flex overflow-hidden h-full lg:h-auto">
+    <!-- 桌面端：左侧列表 -->
+    <aside class="hidden lg:flex w-80 flex-col bg-white border-r border-brand-100 z-10 flex-none h-full">
+      <div class="p-4 border-b border-brand-100 flex items-center justify-between">
+        <h2 class="font-black text-sm text-brand-800">搜索结果 <span id="desktop-count" class="text-brand-accent">0</span></h2>
+      </div>
+      <div id="desktop-list" class="flex-1 overflow-y-auto p-3 space-y-3 custom-scroll"></div>
+    </aside>
+
+    <!-- 地图区域 -->
+    <main class="flex-1 relative map-bg h-full lg:h-auto">
+      <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div class="text-center opacity-60">
+          <div class="text-5xl lg:text-6xl mb-2">🗾</div>
+          <p class="text-sm lg:text-base font-medium text-brand-600">MapLibre GL · 东京亲子地点</p>
+          <p class="text-xs text-brand-400 mt-1">（响应式布局占位）</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 移动端：底部可拖拽卡片 -->
+  <div id="bottom-sheet" class="lg:hidden absolute bottom-0 left-0 right-0 z-20 sheet-transition" style="transform: translateY(0);">
+    <div class="bg-white rounded-t-3xl shadow-[0_-4px_24px_rgba(0,0,0,0.08)] border-t border-brand-200 overflow-hidden">
+      <div id="drag-handle" class="w-full flex justify-center pt-2 pb-1 cursor-grab active:cursor-grabbing">
+        <div class="w-10 h-1 rounded-full bg-brand-300"></div>
+      </div>
+      <div class="px-4 pb-2 flex items-center justify-between">
+        <h3 class="font-black text-base text-brand-800">搜索结果 <span id="mobile-count" class="text-brand-accent">0</span></h3>
+        <div class="flex gap-2">
+          <button id="mobile-sort-btn" class="text-xs font-bold text-brand-600 px-2 py-1 rounded-lg bg-brand-50">排序</button>
+          <button id="expand-sheet" class="text-brand-400 transition-transform">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="mobile-list" class="px-4 pb-5 overflow-x-auto flex gap-3 scrollbar-hide" style="height: 200px;"></div>
+    </div>
+  </div>
+
+  <!-- 移动端排序弹窗 -->
+  <div id="mobile-sort-modal" class="lg:hidden absolute inset-0 z-30 hidden bg-black/20 backdrop-blur-sm items-end">
+    <div class="bg-white w-full rounded-t-3xl p-5">
+      <h3 class="font-black text-lg text-brand-800 mb-3">排序</h3>
+      <div class="space-y-2">
+        <button class="sort-option w-full text-left px-4 py-3 rounded-xl border border-brand-200 font-bold text-sm" data-val="relevance">综合推荐</button>
+        <button class="sort-option w-full text-left px-4 py-3 rounded-xl border border-brand-200 font-bold text-sm" data-val="rating">评分从高到低</button>
+        <button class="sort-option w-full text-left px-4 py-3 rounded-xl border border-brand-200 font-bold text-sm" data-val="name">名称 A-Z</button>
+      </div>
+      <button id="close-sort" class="mt-4 w-full rounded-full bg-brand-50 py-3 text-sm font-bold text-brand-600">取消</button>
+    </div>
+  </div>
+
+  <script>
+    const places = [
+      { id:1, nameZh:"荒川自然公园", nameJa:"荒川自然公園", category:"park", ward:"荒川区", freeEntry:true, rainyDay:false, indoor:false, ageMin:1, ageMax:10, strollerScore:4, diaperScore:3, parkingScore:2, playScore:5, description:"大片绿地、交通园和水边步道，荒川区经典放电点。", img:"https://images.unsplash.com/photo-1519331379826-f10be5486c6f?w=400" },
+      { id:2, nameZh:"汐入公园", nameJa:"汐入公園", category:"park", ward:"荒川区", freeEntry:true, rainyDay:false, indoor:false, ageMin:0, ageMax:10, strollerScore:5, diaperScore:3, parkingScore:3, playScore:5, description:"隅田川边大型公园，草地和 playground 适合亲子。", img:"https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=400" },
+      { id:3, nameZh:"上野动物园", nameJa:"上野動物園", category:"zoo", ward:"台东区", freeEntry:false, rainyDay:false, indoor:false, ageMin:1, ageMax:10, strollerScore:4, diaperScore:4, parkingScore:2, playScore:5, description:"东京经典动物园，适合安排半天到一天。", img:"https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=400" },
+      { id:4, nameZh:"墨田水族馆", nameJa:"すみだ水族館", category:"aquarium", ward:"墨田区", freeEntry:false, rainyDay:true, indoor:true, ageMin:0, ageMax:10, strollerScore:4, diaperScore:4, parkingScore:4, playScore:3, description:"晴空塔内水族馆，低龄宝宝也容易看完。", img:"https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400" },
+      { id:5, nameZh:"国立科学博物馆", nameJa:"国立科学博物館", category:"museum", ward:"台东区", freeEntry:false, rainyDay:true, indoor:true, ageMin:3, ageMax:10, strollerScore:4, diaperScore:4, parkingScore:2, playScore:4, description:"恐龙和互动展示丰富，雨天或酷暑的高质量室内选择。", img:"https://images.unsplash.com/photo-1566127444979-b3d2b654e3d7?w=400" },
+      { id:6, nameZh:"东京晴空塔", nameJa:"東京スカイツリー", category:"landmark", ward:"墨田区", freeEntry:false, rainyDay:true, indoor:true, ageMin:0, ageMax:10, strollerScore:5, diaperScore:5, parkingScore:4, playScore:3, description:"商场、水族馆、观景台和餐饮集中。", img:"https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?w=400" },
+      { id:7, nameZh:"阳光城水族馆", nameJa:"サンシャイン池袋水族館", category:"aquarium", ward:"丰岛区", freeEntry:false, rainyDay:true, indoor:true, ageMin:0, ageMax:12, strollerScore:5, diaperScore:5, parkingScore:4, playScore:5, description:"阳光城内水族馆，海洋现场感强。", img:"https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400" },
+      { id:8, nameZh:"teamLab Planets", nameJa:"teamLab Planets", category:"museum", ward:"江东区", freeEntry:false, rainyDay:true, indoor:true, ageMin:4, ageMax:15, strollerScore:2, diaperScore:4, parkingScore:3, playScore:5, description:"戏水互动，沉浸式光影。", img:"https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=400" },
+    ];
+    const catLabel = {park:"公园",zoo:"动物园",aquarium:"水族馆",museum:"博物馆",indoor_play:"室内游乐",library:"图书馆",children_center:"儿童馆",landmark:"地标"};
+    const fav = new Set([2,4]);
+    let filters = { q:"", age:null, cats:[], feats:[], onlyFav:false, sort:"relevance" };
+    let mobileExpanded = false;
+
+    function doFilter() {
+      let r = places.filter(p => {
+        if (filters.age) {
+          const map = {"0-1":[0,1],"1-3":[1,3],"3-6":[3,6],"6+":[6,10]};
+          const [mn,mx] = map[filters.age];
+          if (p.ageMin>mx || p.ageMax<mn) return false;
+        }
+        if (filters.cats.length && !filters.cats.includes(p.category)) return false;
+        if (filters.feats.includes("free") && !p.freeEntry) return false;
+        if (filters.feats.includes("rainy_day") && !p.rainyDay) return false;
+        if (filters.feats.includes("stroller_friendly") && p.strollerScore<4) return false;
+        if (filters.feats.includes("parking_easy") && p.parkingScore<4) return false;
+        if (filters.q && ![p.nameZh,p.nameJa,p.ward,catLabel[p.category],p.description].join(" ").toLowerCase().includes(filters.q.toLowerCase())) return false;
+        if (filters.onlyFav && !fav.has(p.id)) return false;
+        return true;
+      });
+      if (filters.sort==="rating") r.sort((a,b)=>b.playScore-a.playScore);
+      if (filters.sort==="name") r.sort((a,b)=>a.nameZh.localeCompare(b.nameZh,"zh"));
+      return r;
+    }
+
+    function cardHTML(p, mobile=false) {
+      const isFav = fav.has(p.id);
+      const w = mobile ? 'w-64' : 'w-full';
+      return `
+        <div class="group ${w} rounded-2xl border border-brand-200 bg-white overflow-hidden hover:border-brand-accent transition cursor-pointer ${mobile?'shadow-sm':'flex gap-3 p-3 items-start card-shadow'}">
+          ${mobile ? `
+            <div class="relative h-24">
+              <img src="${p.img}" class="w-full h-full object-cover" alt="${p.nameZh}">
+              <button class="fav-btn absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center ${isFav?'text-red-500':'text-brand-400'}" data-id="${p.id}">
+                <svg class="w-4 h-4" fill="${isFav?'currentColor':'none'}" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+              </button>
+            </div>
+            <div class="p-3">
+              <h4 class="font-black text-sm text-brand-800 truncate">${p.nameZh}</h4>
+              <p class="text-xs text-brand-500 mt-0.5">${p.ward} · ${catLabel[p.category]}</p>
+              <p class="text-xs text-brand-600 mt-1 line-clamp-2">${p.description}</p>
+              <div class="flex gap-1 mt-2">${p.freeEntry?'<span class="text-[10px] px-2 py-0.5 rounded-full bg-[#e8f5ee] text-[#46b37b] font-bold">免费</span>':''}${p.rainyDay?'<span class="text-[10px] px-2 py-0.5 rounded-full bg-[#eef4fb] text-[#4a9bd8] font-bold">雨天</span>':''}</div>
+            </div>
+          ` : `
+            <img src="${p.img}" class="w-20 h-20 rounded-xl object-cover flex-none bg-brand-50">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-1">
+                <h3 class="font-black text-sm text-brand-800 truncate">${p.nameZh}</h3>
+                <button class="fav-btn ${isFav?'text-red-500':'text-brand-400'} hover:text-red-500 transition flex-none" data-id="${p.id}">
+                  <svg class="w-4 h-4" fill="${isFav?'currentColor':'none'}" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+                </button>
+              </div>
+              <p class="text-xs text-brand-500 font-medium mt-0.5">${p.ward} · ${catLabel[p.category]}</p>
+              <p class="text-xs text-brand-600 mt-1 line-clamp-2">${p.description}</p>
+              <div class="flex gap-1 mt-1.5">${p.freeEntry?'<span class="text-[10px] px-1.5 py-0.5 rounded bg-[#e8f5ee] text-[#46b37b] font-bold">免费</span>':''}${p.rainyDay?'<span class="text-[10px] px-1.5 py-0.5 rounded bg-[#eef4fb] text-[#4a9bd8] font-bold">雨天</span>':''}</div>
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    function render() {
+      const r = doFilter();
+      document.getElementById("desktop-count").textContent = r.length;
+      document.getElementById("mobile-count").textContent = r.length;
+
+      const dList = document.getElementById("desktop-list");
+      dList.innerHTML = r.map(p => cardHTML(p, false)).join("");
+
+      const mList = document.getElementById("mobile-list");
+      mList.innerHTML = r.map(p => cardHTML(p, true)).join("");
+
+      document.querySelectorAll(".fav-btn").forEach(b => b.addEventListener("click", e => {
+        e.stopPropagation();
+        const id = +b.dataset.id;
+        fav.has(id) ? fav.delete(id) : fav.add(id);
+        render();
+      }));
+
+      updateChips();
+    }
+
+    function updateChips() {
+      document.querySelectorAll(".chip[data-type]").forEach(c => {
+        const t = c.dataset.type, v = c.dataset.val;
+        let on = false;
+        if (t==="age") on = filters.age===v;
+        if (t==="category") on = filters.cats.includes(v);
+        if (t==="feature") on = filters.feats.includes(v);
+        c.classList.toggle("active", on);
+      });
+      document.getElementById("desktop-fav").classList.toggle("active", filters.onlyFav);
+      document.getElementById("mobile-fav").classList.toggle("text-red-500", filters.onlyFav);
+      document.getElementById("mobile-fav").classList.toggle("text-brand-400", !filters.onlyFav);
+      document.getElementById("desktop-sort").value = filters.sort;
+      document.querySelectorAll(".sort-option").forEach(b => {
+        b.classList.toggle("bg-brand-accent", b.dataset.val===filters.sort);
+        b.classList.toggle("text-white", b.dataset.val===filters.sort);
+        b.classList.toggle("text-brand-600", b.dataset.val!==filters.sort);
+      });
+      syncModal();
+    }
+
+    function syncModal() {
+      document.querySelectorAll("#modal-cats .chip, #modal-ages .chip").forEach(c => {
+        const t=c.dataset.type, v=c.dataset.val;
+        let on=false;
+        if (t==="age") on=filters.age===v;
+        if (t==="category") on=filters.cats.includes(v);
+        c.classList.toggle("active", on);
+      });
+      document.querySelectorAll(".modal-feat").forEach(cb => cb.checked = filters.feats.includes(cb.dataset.val));
+      document.getElementById("mobile-sort").value = filters.sort;
+    }
+
+    // Search
+    document.getElementById("desktop-search").addEventListener("input", e => { filters.q=e.target.value; render(); });
+    document.getElementById("mobile-search").addEventListener("input", e => { filters.q=e.target.value; render(); });
+
+    // Desktop chips
+    document.querySelectorAll(".desktop-chip").forEach(b => b.addEventListener("click", () => toggleFilter(b.dataset.type, b.dataset.val)));
+
+    // Mobile chips
+    document.querySelectorAll(".mobile-chip").forEach(b => b.addEventListener("click", () => toggleFilter(b.dataset.type, b.dataset.val)));
+
+    function toggleFilter(type, val) {
+      if (type==="age") filters.age = filters.age===val?null:val;
+      if (type==="category") filters.cats = filters.cats.includes(val)?filters.cats.filter(x=>x!==val):[...filters.cats,val];
+      if (type==="feature") filters.feats = filters.feats.includes(val)?filters.feats.filter(x=>x!==val):[...filters.feats,val];
+      render();
+    }
+
+    // Favorites
+    document.getElementById("desktop-fav").addEventListener("click", () => { filters.onlyFav=!filters.onlyFav; render(); });
+    document.getElementById("mobile-fav").addEventListener("click", () => { filters.onlyFav=!filters.onlyFav; render(); });
+
+    // Sort
+    document.getElementById("desktop-sort").addEventListener("change", e => { filters.sort=e.target.value; render(); });
+    document.getElementById("mobile-sort").addEventListener("change", e => { filters.sort=e.target.value; render(); });
+    document.querySelectorAll(".sort-option").forEach(b => b.addEventListener("click", () => { filters.sort=b.dataset.val; render(); closeSortModal(); }));
+
+    // Reset
+    document.getElementById("desktop-reset").addEventListener("click", resetAll);
+    document.getElementById("mobile-reset").addEventListener("click", resetAll);
+
+    function resetAll() {
+      filters={q:"",age:null,cats:[],feats:[],onlyFav:false,sort:"relevance"};
+      document.getElementById("desktop-search").value="";
+      document.getElementById("mobile-search").value="";
+      document.getElementById("desktop-sort").value="relevance";
+      document.getElementById("mobile-sort").value="relevance";
+      render();
+    }
+
+    // Mobile more filter modal
+    document.getElementById("mobile-more").addEventListener("click", () => document.getElementById("mobile-modal").classList.remove("hidden"));
+    document.getElementById("mobile-more").addEventListener("click", () => document.getElementById("mobile-modal").classList.add("flex"));
+    document.getElementById("close-mobile-modal").addEventListener("click", closeMobileModal);
+    document.getElementById("apply-mobile").addEventListener("click", closeMobileModal);
+    document.getElementById("mobile-modal").addEventListener("click", e => { if(e.target.id==="mobile-modal") closeMobileModal(); });
+
+    function closeMobileModal() { document.getElementById("mobile-modal").classList.add("hidden"); document.getElementById("mobile-modal").classList.remove("flex"); }
+
+    function buildModal() {
+      document.getElementById("modal-cats").innerHTML = ["park","zoo","aquarium","museum","indoor_play","library","children_center"].map(c =>
+        `<button class="chip rounded-full border px-3 py-1.5 text-xs font-bold" data-type="category" data-val="${c}">${catLabel[c]}</button>`
+      ).join("");
+      document.getElementById("modal-ages").innerHTML = ["0-1","1-3","3-6","6+"].map(a =>
+        `<button class="chip rounded-full border px-3 py-1.5 text-xs font-bold" data-type="age" data-val="${a}">${a}岁</button>`
+      ).join("");
+      document.getElementById("modal-feats").innerHTML = [
+        ["free","免费"],["rainy_day","雨天可去"],["stroller_friendly","婴儿车友好"],["parking_easy","停车方便"]
+      ].map(([k,l]) => `<label class="flex items-center justify-between rounded-xl border border-brand-200 bg-white px-3 py-2"><span class="text-sm font-bold text-brand-600">${l}</span><input type="checkbox" class="modal-feat w-5 h-5 accent-brand-accent" data-val="${k}"></label>`).join("");
+
+      document.querySelectorAll("#modal-cats .chip, #modal-ages .chip").forEach(b => b.addEventListener("click", () => toggleFilter(b.dataset.type, b.dataset.val)));
+      document.getElementById("modal-feats").addEventListener("change", () => {
+        filters.feats = [...document.querySelectorAll(".modal-feat:checked")].map(cb => cb.dataset.val);
+        render();
+      });
+    }
+
+    // Bottom sheet expand/collapse
+    const bottomSheet = document.getElementById("bottom-sheet");
+    const expandBtn = document.getElementById("expand-sheet");
+    const mobileList = document.getElementById("mobile-list");
+    const dragHandle = document.getElementById("drag-handle");
+
+    function setSheetState(expanded) {
+      mobileExpanded = expanded;
+      bottomSheet.style.transform = expanded ? "translateY(0)" : "translateY(0)";
+      mobileList.style.height = expanded ? "calc(100vh - 200px)" : "200px";
+      mobileList.classList.toggle("flex-wrap", expanded);
+      mobileList.classList.toggle("overflow-x-auto", !expanded);
+      mobileList.classList.toggle("overflow-y-auto", expanded);
+      expandBtn.querySelector("svg").style.transform = expanded ? "rotate(180deg)" : "";
+      dragHandle.style.display = expanded ? "none" : "flex";
+      // 调整位置：展开时从顶部开始
+      bottomSheet.style.top = expanded ? "80px" : "auto";
+      bottomSheet.style.bottom = expanded ? "0" : "0";
+      bottomSheet.style.height = expanded ? "auto" : "auto";
+    }
+
+    expandBtn.addEventListener("click", () => setSheetState(!mobileExpanded));
+
+    // Drag handle
+    let startY = 0, startTransform = 0;
+    dragHandle.addEventListener("touchstart", e => { startY = e.touches[0].clientY; }, {passive:true});
+    dragHandle.addEventListener("touchmove", e => {
+      const dy = startY - e.touches[0].clientY;
+      if (dy > 80) setSheetState(true);
+      if (dy < -80) setSheetState(false);
+    }, {passive:true});
+
+    // Mobile sort modal
+    document.getElementById("mobile-sort-btn").addEventListener("click", () => { document.getElementById("mobile-sort-modal").classList.remove("hidden"); document.getElementById("mobile-sort-modal").classList.add("flex"); });
+    document.getElementById("close-sort").addEventListener("click", closeSortModal);
+    document.getElementById("mobile-sort-modal").addEventListener("click", e => { if(e.target.id==="mobile-sort-modal") closeSortModal(); });
+    function closeSortModal() { document.getElementById("mobile-sort-modal").classList.add("hidden"); document.getElementById("mobile-sort-modal").classList.remove("flex"); }
+
+    // init
+    buildModal();
+    render();
+  </script>
+</body>
+</html>

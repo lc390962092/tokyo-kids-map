@@ -1,30 +1,34 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Search,
   MapPin,
-  X,
   LogIn,
   LogOut,
   Shield,
   UsersRound,
   Plus,
   Menu,
+  ChevronUp,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { createSupabaseClient } from "@/lib/supabase/client";
-import { PlaceFilterPanel } from "@/components/filters/place-filter-panel";
+import { PlaceFilterToolbar } from "@/components/filters/place-filter-toolbar";
 import { filterPlaces, defaultFilters } from "@/lib/place-filters";
 import type { Place, PlaceFilters } from "@/types/place";
-import { fetchUserFavorites, addFavorite, removeFavorite } from "@/lib/favorites";
+import {
+  fetchUserFavorites,
+  addFavorite,
+  removeFavorite,
+} from "@/lib/favorites";
 import { WeatherWidget } from "@/components/weather/weather-widget";
 import type { Playdate } from "@/types/playdate";
 import { PlaydateFormModal } from "@/components/playdate/playdate-form-modal";
 import { PlaydateDetailModal } from "@/components/playdate/playdate-detail-modal";
 import { isPlaydatesEnabled } from "@/lib/site-settings";
+import { PlaceCard, PlaceListEmpty } from "@/components/place/place-card";
 
 const supabase = createSupabaseClient();
 
@@ -43,25 +47,28 @@ type MapExperienceProps = {
 
 export function MapExperience({ places }: MapExperienceProps) {
   const [filters, setFilters] = useState<PlaceFilters>(defaultFilters);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [showPlaydates, setShowPlaydates] = useState(false);
   const [playdatesFeatureEnabled, setPlaydatesFeatureEnabled] = useState(true);
   const [featureLoading, setFeatureLoading] = useState(true);
   const [selectedPlaydate, setSelectedPlaydate] = useState<Playdate | null>(
     null,
   );
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [createFromPlaceId, setCreateFromPlaceId] = useState<string | undefined>();
   const [nearbyPlaydates, setNearbyPlaydates] = useState<Playdate[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [sheetExpanded, setSheetExpanded] = useState(false);
   const { user, role } = useAuth();
 
   const totalPlaces = places.length;
-  const pendingGeoCount = places.filter((p) => p.latitude === 0 || p.longitude === 0).length;
   const filteredPlaces = useMemo(
-    () => filterPlaces(places, filters).filter((p) => p.latitude !== 0 && p.longitude !== 0),
-    [places, filters],
+    () =>
+      filterPlaces(places, filters, favoriteIds).filter(
+        (p) => p.latitude !== 0 && p.longitude !== 0,
+      ),
+    [places, filters, favoriteIds],
   );
 
   // Auto-enable playdates display on login + read global feature flag
@@ -102,32 +109,74 @@ export function MapExperience({ places }: MapExperienceProps) {
     });
   }, []);
 
-  return (
-    <main className="h-dvh overflow-hidden bg-[#fffaf4]">
-      <div className="grid h-full grid-cols-1 md:grid-cols-[360px_1fr]">
-        <div className="hidden h-full overflow-y-auto md:block">
-          <PlaceFilterPanel
-            filters={filters}
-            onChange={setFilters}
-            resultCount={filteredPlaces.length}
-            totalPlaces={totalPlaces}
-            pendingGeoCount={pendingGeoCount}
-            nearbyPlaydates={nearbyPlaydates}
-            onSelectPlaydate={setSelectedPlaydate}
-            headerSlot={
-              <WeatherWidget
-                onApplyRecommendations={(rec) =>
-                  setFilters((prev) => ({ ...prev, ...rec }))
-                }
-                onReset={() => setFilters(defaultFilters)}
-              />
-            }
-          />
-        </div>
+  const handleSelectPlace = (place: Place) => {
+    setSelectedPlaceId(place.id);
+    setSheetExpanded(false);
+  };
 
-        <section className="relative h-full">
+  return (
+    <main className="relative h-dvh overflow-hidden bg-[#fffaf4]">
+      {/* Desktop: top toolbar */}
+      <div className="hidden lg:block absolute inset-x-0 top-0 z-20">
+        <PlaceFilterToolbar
+          filters={filters}
+          resultCount={filteredPlaces.length}
+          onChange={setFilters}
+        />
+      </div>
+
+      {/* Mobile: top search + chips */}
+      <div className="lg:hidden">
+        <PlaceFilterToolbar
+          filters={filters}
+          resultCount={filteredPlaces.length}
+          onChange={setFilters}
+        />
+      </div>
+
+      <div className="flex h-full flex-col lg:flex-row lg:pt-[104px]">
+        {/* Desktop: left list panel */}
+        <aside className="hidden lg:flex w-80 flex-col bg-white border-r border-brand-100 z-10 h-full">
+          <div className="p-4 border-b border-brand-100 flex items-center justify-between">
+            <h2 className="text-sm font-black text-brand-800">
+              搜索结果{" "}
+              <span className="text-brand-accent">{filteredPlaces.length}</span>
+              {totalPlaces !== undefined && (
+                <span className="ml-1 text-xs text-brand-400">
+                  / {totalPlaces}
+                </span>
+              )}
+            </h2>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scroll">
+            <WeatherWidget
+              onApplyRecommendations={(rec) =>
+                setFilters((prev) => ({ ...prev, ...rec }))
+              }
+              onReset={() => setFilters(defaultFilters)}
+            />
+            {filteredPlaces.length === 0 ? (
+              <PlaceListEmpty />
+            ) : (
+              filteredPlaces.map((place) => (
+                <PlaceCard
+                  key={place.id}
+                  place={place}
+                  variant="list"
+                  isFavorited={favoriteIds.has(place.id)}
+                  onToggleFavorite={() => toggleFavorite(place.id)}
+                  onSelect={() => handleSelectPlace(place)}
+                />
+              ))
+            )}
+          </div>
+        </aside>
+
+        {/* Map area */}
+        <section className="relative flex-1 h-full lg:h-auto">
           <KidsMap
             places={filteredPlaces}
+            selectedPlaceId={selectedPlaceId ?? undefined}
             favoriteIds={favoriteIds}
             onToggleFavorite={toggleFavorite}
             showPlaydates={showPlaydates && playdatesFeatureEnabled && !featureLoading}
@@ -139,8 +188,8 @@ export function MapExperience({ places }: MapExperienceProps) {
             onPlaydatesLoaded={setNearbyPlaydates}
           />
 
-          {/* PC版顶部工具栏 */}
-          <div className="absolute right-4 top-4 z-10 hidden items-center gap-2 md:flex">
+          {/* PC top-right action bar */}
+          <div className="absolute right-4 top-4 z-10 hidden items-center gap-2 lg:flex">
             {user && playdatesFeatureEnabled && !featureLoading && (
               <>
                 <button
@@ -210,120 +259,99 @@ export function MapExperience({ places }: MapExperienceProps) {
             )}
           </div>
 
-          <div className="absolute left-4 right-4 top-4 z-10 flex items-center justify-between gap-3 rounded-3xl border border-white/70 bg-white/90 px-4 py-3 shadow-lg backdrop-blur md:hidden">
-            <div>
-              <div className="text-base font-black text-[#2c3834]">
-                东京溜娃地图
-              </div>
-              <div className="text-xs font-bold text-[#8a6b5e]">
-                Tokyo Kids Map · {filteredPlaces.length} 个地点
-                {pendingGeoCount > 0 && (
-                  <span className="ml-1.5 text-[#ff8c73]">· {pendingGeoCount} 个待定位</span>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIsFilterOpen(true)}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#ff8c73] text-white shadow-md"
-                aria-label="打开筛选"
-                title="筛选"
-              >
-                <Search className="h-5 w-5" />
-              </button>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsMenuOpen((v) => !v)}
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#76584e] shadow-md"
-                  aria-label="更多"
-                  title="更多"
-                >
-                  <Menu className="h-5 w-5" />
-                </button>
-                {isMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-48 overflow-hidden rounded-2xl border border-[#ffe0ce] bg-white p-2 shadow-xl">
+          {/* Mobile menu */}
+          <div className="absolute right-4 top-[140px] z-10 lg:hidden">
+            <button
+              type="button"
+              onClick={() => setIsMenuOpen((v) => !v)}
+              className="grid h-11 w-11 place-items-center rounded-full bg-white text-[#76584e] shadow-lg"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            {isMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-48 overflow-hidden rounded-2xl border border-[#ffe0ce] bg-white p-2 shadow-xl">
+                <MobileMenuItem
+                  icon={
+                    <UsersRound
+                      className={`h-4 w-4 ${showPlaydates ? "text-[#ff8c73]" : "text-[#c4a99b]"}`}
+                    />
+                  }
+                  label={showPlaydates ? "隐藏约伴" : "显示约伴"}
+                  onClick={() => {
+                    setShowPlaydates((v) => !v);
+                    setIsMenuOpen(false);
+                  }}
+                />
+                {user ? (
+                  <>
                     <MobileMenuItem
-                      icon={
-                        <UsersRound
-                          className={`h-4 w-4 ${showPlaydates ? "text-[#ff8c73]" : "text-[#c4a99b]"}`}
-                        />
-                      }
-                      label={showPlaydates ? "隐藏约伴" : "显示约伴"}
+                      icon={<Plus className="h-4 w-4 text-[#4a8c4a]" />}
+                      label="发起约伴"
                       onClick={() => {
-                        setShowPlaydates((v) => !v);
+                        setIsCreateOpen(true);
                         setIsMenuOpen(false);
                       }}
                     />
-                    {user ? (
-                      <>
-                        <MobileMenuItem
-                          icon={<Plus className="h-4 w-4 text-[#4a8c4a]" />}
-                          label="发起约伴"
-                          onClick={() => {
-                            setIsCreateOpen(true);
-                            setIsMenuOpen(false);
-                          }}
-                        />
-                        <MobileMenuItem
-                          icon={
-                            <UsersRound className="h-4 w-4 text-[#76584e]" />
-                          }
-                          label="会员中心"
-                          href="/member"
-                          onClick={() => setIsMenuOpen(false)}
-                        />
-                        {role === "admin" && (
-                          <MobileMenuItem
-                            icon={
-                              <Shield className="h-4 w-4 text-[#ff8c73]" />
-                            }
-                            label="管理后台"
-                            href="/admin"
-                            onClick={() => setIsMenuOpen(false)}
-                          />
-                        )}
-                        <MobileMenuItem
-                          icon={
-                            <LogOut className="h-4 w-4 text-[#76584e]" />
-                          }
-                          label="退出登录"
-                          onClick={() => {
-                            supabase.auth.signOut();
-                            setIsMenuOpen(false);
-                          }}
-                        />
-                      </>
-                    ) : (
+                    <MobileMenuItem
+                      icon={<UsersRound className="h-4 w-4 text-[#76584e]" />}
+                      label="会员中心"
+                      href="/member"
+                      onClick={() => setIsMenuOpen(false)}
+                    />
+                    {role === "admin" && (
                       <MobileMenuItem
-                        icon={
-                          <LogIn className="h-4 w-4 text-[#76584e]" />
-                        }
-                        label="登录"
-                        href="/login"
+                        icon={<Shield className="h-4 w-4 text-[#ff8c73]" />}
+                        label="管理后台"
+                        href="/admin"
                         onClick={() => setIsMenuOpen(false)}
                       />
                     )}
-                  </div>
+                    <MobileMenuItem
+                      icon={<LogOut className="h-4 w-4 text-[#76584e]" />}
+                      label="退出登录"
+                      onClick={() => {
+                        supabase.auth.signOut();
+                        setIsMenuOpen(false);
+                      }}
+                    />
+                  </>
+                ) : (
+                  <MobileMenuItem
+                    icon={<LogIn className="h-4 w-4 text-[#76584e]" />}
+                    label="登录"
+                    href="/login"
+                    onClick={() => setIsMenuOpen(false)}
+                  />
                 )}
               </div>
-            </div>
+            )}
           </div>
 
-          {filteredPlaces.length === 0 ? (
+          {filteredPlaces.length === 0 && (
             <div className="absolute left-1/2 top-1/2 z-10 w-[min(86vw,360px)] -translate-x-1/2 -translate-y-1/2 rounded-3xl bg-white p-6 text-center shadow-xl">
               <MapPin className="mx-auto h-8 w-8 text-[#ff8c73]" />
               <h2 className="mt-3 text-lg font-black text-[#2c3834]">
                 没有匹配地点
               </h2>
               <p className="mt-2 text-sm font-medium text-[#80675b]">
-                换个年龄或少选几个特点试试。
+                换个关键词或少选几个条件试试。
               </p>
             </div>
-          ) : null}
+          )}
         </section>
       </div>
+
+      {/* Mobile bottom sheet */}
+      <MobileBottomSheet
+        places={filteredPlaces}
+        resultCount={filteredPlaces.length}
+        expanded={sheetExpanded}
+        onToggle={() => setSheetExpanded((v) => !v)}
+        favoriteIds={favoriteIds}
+        onToggleFavorite={toggleFavorite}
+        onSelectPlace={handleSelectPlace}
+        isFavoritesEnabled={!!user}
+      />
 
       {selectedPlaydate && (
         <PlaydateDetailModal
@@ -346,30 +374,88 @@ export function MapExperience({ places }: MapExperienceProps) {
           }}
         />
       )}
-
-      {isFilterOpen ? (
-        <div className="fixed inset-0 z-30 bg-black/30 md:hidden">
-          <div className="absolute inset-x-0 bottom-0 max-h-[86dvh] overflow-y-auto rounded-t-[28px] bg-[#fffaf4] shadow-2xl">
-            <div className="sticky top-0 z-10 flex justify-end bg-[#fffaf4]/95 p-3 backdrop-blur">
-              <button
-                type="button"
-                onClick={() => setIsFilterOpen(false)}
-                className="grid h-10 w-10 place-items-center rounded-full bg-white text-[#8b5e4b] shadow-sm"
-                aria-label="关闭筛选"
-                title="关闭"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <PlaceFilterPanel
-              filters={filters}
-              onChange={setFilters}
-              resultCount={filteredPlaces.length}
-            />
-          </div>
-        </div>
-      ) : null}
     </main>
+  );
+}
+
+function MobileBottomSheet({
+  places,
+  resultCount,
+  expanded,
+  onToggle,
+  favoriteIds,
+  onToggleFavorite,
+  onSelectPlace,
+  isFavoritesEnabled,
+}: {
+  places: Place[];
+  resultCount: number;
+  expanded: boolean;
+  onToggle: () => void;
+  favoriteIds: Set<string>;
+  onToggleFavorite: (id: string) => void;
+  onSelectPlace: (place: Place) => void;
+  isFavoritesEnabled: boolean;
+}) {
+  const listRef = useRef<HTMLDivElement | null>(null);
+
+  return (
+    <div
+      className={`lg:hidden fixed bottom-0 left-0 right-0 z-20 bg-white rounded-t-3xl border-t border-brand-200 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] transition-transform duration-300 ease-out ${
+        expanded ? "translate-y-0 top-[80px]" : ""
+      }`}
+      style={{ height: expanded ? "calc(100dvh - 80px)" : "auto" }}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex justify-center pt-2 pb-1"
+      >
+        <div className="w-10 h-1 rounded-full bg-brand-300" />
+      </button>
+      <div className="px-4 pb-2 flex items-center justify-between">
+        <h3 className="font-black text-base text-brand-800">
+          搜索结果 <span className="text-brand-accent">{resultCount}</span>
+        </h3>
+        <button
+          type="button"
+          onClick={onToggle}
+          className={`text-brand-400 transition-transform ${expanded ? "rotate-180" : ""}`}
+        >
+          <ChevronUp className="h-5 w-5" />
+        </button>
+      </div>
+      <div
+        ref={listRef}
+        className={`px-4 pb-5 flex gap-3 ${
+          expanded
+            ? "flex-wrap overflow-y-auto overflow-x-hidden custom-scroll"
+            : "overflow-x-auto scrollbar-hide"
+        }`}
+        style={{ height: expanded ? "calc(100% - 80px)" : "220px" }}
+      >
+        {places.length === 0 ? (
+          <div className="w-full">
+            <PlaceListEmpty />
+          </div>
+        ) : (
+          places.map((place) => (
+            <PlaceCard
+              key={place.id}
+              place={place}
+              variant="card"
+              isFavorited={favoriteIds.has(place.id)}
+              onToggleFavorite={
+                isFavoritesEnabled
+                  ? () => onToggleFavorite(place.id)
+                  : undefined
+              }
+              onSelect={() => onSelectPlace(place)}
+            />
+          ))
+        )}
+      </div>
+    </div>
   );
 }
 

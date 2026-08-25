@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tokyo Kids Map - 顶部工具条 dense 版</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Noto Sans SC', sans-serif; background: #f6f8f7; color: #2c3834; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .chip { transition: all 0.15s ease; }
+    .chip.active { background: #ff8c73; color: white; border-color: #ff8c73; }
+    .chip:not(.active) { background: white; color: #76584e; border-color: #e5d8d0; }
+    .map-layer { background: linear-gradient(135deg, #e4f0ec 0%, #fdf6f0 100%); }
+    .card-shadow { box-shadow: 0 4px 20px rgba(60,80,70,0.08); }
+  </style>
+</head>
+<body class="h-screen w-full overflow-hidden flex flex-col">
+  <!-- 顶部密集工具条 -->
+  <header class="bg-white border-b border-[#e9ddd5] z-20 flex-none">
+    <div class="px-5 py-3 flex items-center gap-4">
+      <div class="flex items-center gap-2 flex-none">
+        <span class="text-2xl">🗾</span>
+        <div>
+          <h1 class="font-black text-lg leading-tight">东京溜娃地图</h1>
+          <p class="text-xs text-[#8a6b5e] font-medium">Tokyo Kids Map</p>
+        </div>
+      </div>
+
+      <div class="flex-1 relative max-w-md">
+        <svg class="absolute left-3 top-2 w-4 h-4 text-[#c4a99b]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input id="search" type="text" placeholder="搜索地点、车站、行政区..." class="w-full rounded-full bg-[#f8f3ef] border border-transparent focus:bg-white focus:border-[#ff8c73] focus:ring-2 focus:ring-[#ff8c73]/20 pl-9 pr-3 py-1.5 text-sm font-medium outline-none">
+      </div>
+
+      <div class="flex items-center gap-2 flex-none">
+        <button id="favBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold transition chip">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+          只看收藏
+        </button>
+        <select id="sort" class="rounded-full border border-[#e5d8d0] bg-white px-3 py-1.5 text-xs font-bold text-[#76584e] outline-none">
+          <option value="relevance">推荐</option>
+          <option value="rating">评分</option>
+          <option value="name">A-Z</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 二级筛选行 -->
+    <div class="px-5 pb-3 flex gap-5 overflow-x-auto scrollbar-hide">
+      <div class="flex items-center gap-2 flex-none">
+        <span class="text-xs font-black text-[#3b4a45]">年龄</span>
+        <div class="flex gap-1.5">
+          <button class="chip rounded-full border px-3 py-1 text-xs font-bold" data-type="age" data-val="0-1">0-1</button>
+          <button class="chip rounded-full border px-3 py-1 text-xs font-bold" data-type="age" data-val="1-3">1-3</button>
+          <button class="chip rounded-full border px-3 py-1 text-xs font-bold" data-type="age" data-val="3-6">3-6</button>
+          <button class="chip rounded-full border px-3 py-1 text-xs font-bold" data-type="age" data-val="6+">6+</button>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 flex-none">
+        <span class="text-xs font-black text-[#3b4a45]">分类</span>
+        <div class="flex gap-1.5">
+          <button class="chip rounded-full border px-3 py-1 text-xs font-bold" data-type="category" data-val="park">公园</button>
+          <button class="chip rounded-full border px-3 py-1 text-xs font-bold" data-type="category" data-val="zoo">动物园</button>
+          <button class="chip rounded-full border px-3 py-1 text-xs font-bold" data-type="category" data-val="aquarium">水族馆</button>
+          <button class="chip rounded-full border px-3 py-1 text-xs font-bold" data-type="category" data-val="museum">博物馆</button>
+          <button class="chip rounded-full border px-3 py-1 text-xs font-bold" data-type="category" data-val="indoor_play">室内</button>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 flex-none">
+        <span class="text-xs font-black text-[#3b4a45]">特点</span>
+        <div class="flex gap-1.5">
+          <button class="chip rounded-full border px-3 py-1 text-xs font-bold" data-type="feature" data-val="free">免费</button>
+          <button class="chip rounded-full border px-3 py-1 text-xs font-bold" data-type="feature" data-val="rainy_day">雨天</button>
+          <button class="chip rounded-full border px-3 py-1 text-xs font-bold" data-type="feature" data-val="stroller_friendly">推车</button>
+          <button class="chip rounded-full border px-3 py-1 text-xs font-bold" data-type="feature" data-val="parking_easy">停车</button>
+        </div>
+      </div>
+      <button id="reset" class="text-xs font-bold text-[#ff8c73] hover:underline flex-none">重置</button>
+    </div>
+  </header>
+
+  <!-- 主体：左侧列表 + 右侧地图 -->
+  <div class="flex-1 flex overflow-hidden">
+    <aside class="w-80 bg-white border-r border-[#e9ddd5] flex flex-col z-10 flex-none">
+      <div class="p-4 border-b border-[#e9ddd5] flex items-center justify-between">
+        <h2 class="font-black text-sm">搜索结果 <span id="count" class="text-[#ff8c73]">0</span></h2>
+      </div>
+      <div id="list" class="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-hide"></div>
+    </aside>
+
+    <main class="flex-1 relative map-layer">
+      <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div class="text-center opacity-60">
+          <div class="text-5xl mb-2">🗾</div>
+          <p class="text-sm font-medium text-[#5a6b64]">地图视图 · MapLibre GL</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const places = [
+      { id:1, nameZh:"荒川自然公园", nameJa:"荒川自然公園", category:"park", ward:"荒川区", freeEntry:true, rainyDay:false, indoor:false, ageMin:1, ageMax:10, strollerScore:4, diaperScore:3, parkingScore:2, playScore:5, description:"大片绿地、交通园和水边步道，荒川区经典放电点。", img:"https://images.unsplash.com/photo-1519331379826-f10be5486c6f?w=400" },
+      { id:2, nameZh:"汐入公园", nameJa:"汐入公園", category:"park", ward:"荒川区", freeEntry:true, rainyDay:false, indoor:false, ageMin:0, ageMax:10, strollerScore:5, diaperScore:3, parkingScore:3, playScore:5, description:"隅田川边大型公园，草地和 playground 适合亲子。", img:"https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=400" },
+      { id:3, nameZh:"上野动物园", nameJa:"上野動物園", category:"zoo", ward:"台东区", freeEntry:false, rainyDay:false, indoor:false, ageMin:1, ageMax:10, strollerScore:4, diaperScore:4, parkingScore:2, playScore:5, description:"东京经典动物园，适合安排半天到一天。", img:"https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=400" },
+      { id:4, nameZh:"墨田水族馆", nameJa:"すみだ水族館", category:"aquarium", ward:"墨田区", freeEntry:false, rainyDay:true, indoor:true, ageMin:0, ageMax:10, strollerScore:4, diaperScore:4, parkingScore:4, playScore:3, description:"晴空塔内水族馆，低龄宝宝也容易看完。", img:"https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400" },
+      { id:5, nameZh:"国立科学博物馆", nameJa:"国立科学博物館", category:"museum", ward:"台东区", freeEntry:false, rainyDay:true, indoor:true, ageMin:3, ageMax:10, strollerScore:4, diaperScore:4, parkingScore:2, playScore:4, description:"恐龙和互动展示丰富，雨天或酷暑的高质量室内选择。", img:"https://images.unsplash.com/photo-1566127444979-b3d2b654e3d7?w=400" },
+      { id:6, nameZh:"东京晴空塔", nameJa:"東京スカイツリー", category:"landmark", ward:"墨田区", freeEntry:false, rainyDay:true, indoor:true, ageMin:0, ageMax:10, strollerScore:5, diaperScore:5, parkingScore:4, playScore:3, description:"商场、水族馆、观景台和餐饮集中。", img:"https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?w=400" },
+      { id:7, nameZh:"阳光城水族馆", nameJa:"サンシャイン池袋水族館", category:"aquarium", ward:"丰岛区", freeEntry:false, rainyDay:true, indoor:true, ageMin:0, ageMax:12, strollerScore:5, diaperScore:5, parkingScore:4, playScore:5, description:"阳光城内水族馆，海洋现场感强。", img:"https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400" },
+      { id:8, nameZh:"teamLab Planets", nameJa:"teamLab Planets", category:"museum", ward:"江东区", freeEntry:false, rainyDay:true, indoor:true, ageMin:4, ageMax:15, strollerScore:2, diaperScore:4, parkingScore:3, playScore:5, description:"戏水互动，沉浸式光影。", img:"https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=400" },
+    ];
+    const catLabel = {park:"公园",zoo:"动物园",aquarium:"水族馆",museum:"博物馆",indoor_play:"室内游乐",library:"图书馆",children_center:"儿童馆",landmark:"地标"};
+    const fav = new Set([2,4]);
+    let filters = { q:"", age:null, cats:[], feats:[], onlyFav:false, sort:"relevance" };
+
+    function doFilter() {
+      let r = places.filter(p => {
+        if (filters.age) {
+          const map = {"0-1":[0,1],"1-3":[1,3],"3-6":[3,6],"6+":[6,10]};
+          const [mn,mx] = map[filters.age];
+          if (p.ageMin>mx || p.ageMax<mn) return false;
+        }
+        if (filters.cats.length && !filters.cats.includes(p.category)) return false;
+        if (filters.feats.includes("free") && !p.freeEntry) return false;
+        if (filters.feats.includes("rainy_day") && !p.rainyDay) return false;
+        if (filters.feats.includes("stroller_friendly") && p.strollerScore<4) return false;
+        if (filters.feats.includes("parking_easy") && p.parkingScore<4) return false;
+        if (filters.q && ![p.nameZh,p.nameJa,p.ward,catLabel[p.category],p.description].join(" ").toLowerCase().includes(filters.q.toLowerCase())) return false;
+        if (filters.onlyFav && !fav.has(p.id)) return false;
+        return true;
+      });
+      if (filters.sort==="rating") r.sort((a,b)=>b.playScore-a.playScore);
+      if (filters.sort==="name") r.sort((a,b)=>a.nameZh.localeCompare(b.nameZh,"zh"));
+      return r;
+    }
+    function render() {
+      const r = doFilter();
+      document.getElementById("count").textContent = r.length;
+      const list = document.getElementById("list");
+      list.innerHTML = r.map(p => `
+        <div class="group flex gap-3 rounded-2xl border border-[#e9ddd5] bg-white p-3 hover:border-[#ff8c73] transition cursor-pointer card-shadow">
+          <img src="${p.img}" class="w-20 h-20 rounded-xl object-cover flex-none bg-[#f0eae4]">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between gap-1">
+              <h3 class="font-black text-sm text-[#2c3834] truncate">${p.nameZh}</h3>
+              <button class="fav-btn text-[#c4a99b] hover:text-red-500 transition flex-none" data-id="${p.id}">
+                <svg class="w-4 h-4" fill="${fav.has(p.id)?'currentColor':'none'}" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+              </button>
+            </div>
+            <p class="text-xs text-[#8a6b5e] font-medium mt-0.5">${p.ward} · ${catLabel[p.category]}</p>
+            <p class="text-xs text-[#76584e] mt-1 line-clamp-2">${p.description}</p>
+            <div class="flex gap-1 mt-1.5">
+              ${p.freeEntry?'<span class="text-[10px] px-1.5 py-0.5 rounded bg-[#e8f5ee] text-[#46b37b] font-bold">免费</span>':''}
+              ${p.rainyDay?'<span class="text-[10px] px-1.5 py-0.5 rounded bg-[#eef4fb] text-[#4a9bd8] font-bold">雨天</span>':''}
+            </div>
+          </div>
+        </div>
+      `).join("");
+      list.querySelectorAll(".fav-btn").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); const id=+b.dataset.id; fav.has(id)?fav.delete(id):fav.add(id); render(); }));
+    }
+    document.getElementById("search").addEventListener("input", e => { filters.q=e.target.value; render(); });
+    document.querySelectorAll(".chip[data-type]").forEach(b => b.addEventListener("click", () => {
+      const t=b.dataset.type, v=b.dataset.val;
+      if (t==="age") filters.age = filters.age===v?null:v;
+      if (t==="category") filters.cats = filters.cats.includes(v)?filters.cats.filter(x=>x!==v):[...filters.cats,v];
+      if (t==="feature") filters.feats = filters.feats.includes(v)?filters.feats.filter(x=>x!==v):[...filters.feats,v];
+      document.querySelectorAll(".chip").forEach(c => {
+        const ct=c.dataset.type, cv=c.dataset.val;
+        let active = false;
+        if (ct==="age") active = filters.age===cv;
+        if (ct==="category") active = filters.cats.includes(cv);
+        if (ct==="feature") active = filters.feats.includes(cv);
+        c.classList.toggle("active", active);
+      });
+      render();
+    }));
+    document.getElementById("favBtn").addEventListener("click", () => {
+      filters.onlyFav=!filters.onlyFav;
+      document.getElementById("favBtn").classList.toggle("active", filters.onlyFav);
+      render();
+    });
+    document.getElementById("sort").addEventListener("change", e => { filters.sort=e.target.value; render(); });
+    document.getElementById("reset").addEventListener("click", () => {
+      filters={q:"",age:null,cats:[],feats:[],onlyFav:false,sort:"relevance"};
+      document.getElementById("search").value="";
+      document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+      document.getElementById("favBtn").classList.remove("active");
+      document.getElementById("sort").value="relevance";
+      render();
+    });
+    render();
+  </script>
+</body>
+</html>

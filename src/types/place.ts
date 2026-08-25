@@ -74,4 +74,7 @@ export type PlaceFilters = {
   ageRange?: "0-1" | "1-3" | "3-6" | "6+";
   categories: PlaceCategory[];
   features: PlaceFeature[];
+  searchText?: string;
+  sortBy?: "relevance" | "rating" | "name";
+  onlyFavorites?: boolean;
 };

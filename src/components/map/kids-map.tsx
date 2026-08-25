@@ -66,6 +66,8 @@ export default function KidsMap({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
   const markersRef = useRef<Marker[]>([]);
+  const markerByIdRef = useRef<Record<string, Marker>>({});
+  const updateMarkersRef = useRef<() => void>(() => {});
   const userMarkerRef = useRef<Marker | null>(null);
   const placesRef = useRef(places);
   placesRef.current = places;
@@ -75,6 +77,10 @@ export default function KidsMap({
   favoriteIdsRef.current = favoriteIds;
   const onToggleFavoriteRef = useRef(onToggleFavorite);
   onToggleFavoriteRef.current = onToggleFavorite;
+  const selectedPlaceIdRef = useRef(selectedPlaceId);
+  selectedPlaceIdRef.current = selectedPlaceId;
+  const prevSelectedPlaceIdRef = useRef<string | undefined>(selectedPlaceId);
+  const openPopupForIdRef = useRef<string | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const initialFitDoneRef = useRef(false);
 
@@ -201,6 +207,7 @@ export default function KidsMap({
 
         markersRef.current.forEach((m) => m.remove());
         markersRef.current = [];
+        markerByIdRef.current = {};
 
         const zoom = map.getZoom();
         // Visible marker: 44-56px; touch target always at least 56px
@@ -219,26 +226,30 @@ export default function KidsMap({
           const place = currentPlaces.find((p) => p.id === id);
           if (!place) return;
 
+          const isSelected = selectedPlaceIdRef.current === place.id;
           const isFavorited = favoriteIdsRef.current?.has(place.id) ?? false;
           const color = getCategoryColor(place.category);
           const emoji = categoryEmoji[place.category] ?? "📍";
+
+          const selectedSizeBoost = isSelected ? 1.35 : 1;
+          const dimmed = selectedPlaceIdRef.current && !isSelected ? 0.45 : 1;
 
           const wrapper = document.createElement("button");
           wrapper.type = "button";
           wrapper.className =
             "map-place-marker group relative grid place-items-center rounded-full border-0 bg-transparent p-0";
-          wrapper.style.width = `${touchSize}px`;
-          wrapper.style.height = `${touchSize}px`;
+          wrapper.style.width = `${touchSize * selectedSizeBoost}px`;
+          wrapper.style.height = `${touchSize * selectedSizeBoost}px`;
           wrapper.style.cursor = "pointer";
 
           const inner = document.createElement("span");
-          inner.className =
-            "relative grid place-items-center rounded-full border-2 border-white font-black text-white shadow-lg transition-transform duration-150 group-hover:scale-110 group-active:scale-95";
+          inner.className = `relative grid place-items-center rounded-full border-2 border-white font-black text-white shadow-lg transition-all duration-150 ${isSelected ? "marker-selected-ring ring-4 ring-white/60 scale-110" : "group-hover:scale-110 group-active:scale-95"}`;
           inner.style.backgroundColor = color;
-          inner.style.width = `${visibleSize}px`;
-          inner.style.height = `${visibleSize}px`;
-          inner.style.fontSize = `${fontSize}px`;
+          inner.style.width = `${visibleSize * selectedSizeBoost}px`;
+          inner.style.height = `${visibleSize * selectedSizeBoost}px`;
+          inner.style.fontSize = `${fontSize * selectedSizeBoost}px`;
           inner.style.lineHeight = "1";
+          inner.style.opacity = `${dimmed}`;
           inner.textContent = emoji;
 
           if (isFavorited) {
@@ -251,11 +262,14 @@ export default function KidsMap({
 
           wrapper.append(inner);
 
+          // Raise popup further above the marker so it clears the marker
+          // visuals and is less likely to overlap clustered neighbours.
           const popup = new maplibregl.Popup({
-            offset: Math.round(visibleSize / 2 + 6),
+            offset: Math.round(visibleSize / 2 + 18),
             closeButton: true,
             closeOnClick: false,
             maxWidth: "280px",
+            anchor: "bottom",
           }).setDOMContent(
             createPopupContent(
               place,
@@ -271,7 +285,21 @@ export default function KidsMap({
             .addTo(map);
 
           markersRef.current.push(marker);
+          markerByIdRef.current[place.id] = marker;
         });
+
+        // Open popup for the place that was just selected via list/sheet.
+        const openId = openPopupForIdRef.current;
+        if (openId) {
+          const targetMarker = markerByIdRef.current[openId];
+          if (targetMarker) {
+            const popup = targetMarker.getPopup();
+            if (popup && !popup.isOpen()) {
+              targetMarker.togglePopup();
+            }
+          }
+          openPopupForIdRef.current = null;
+        }
       };
 
       let updatePending = false;
@@ -307,6 +335,9 @@ export default function KidsMap({
       });
 
       updateMarkers();
+
+      // Expose updater for selected-place effect to refresh highlights
+      updateMarkersRef.current = updateMarkers;
     });
 
     return () => {
@@ -347,14 +378,39 @@ export default function KidsMap({
   // Fly to selected place when prop changes
   useEffect(() => {
     if (!mapLoaded || !selectedPlaceId) return;
+    if (selectedPlaceId === prevSelectedPlaceIdRef.current) return;
     const place = places.find((p) => p.id === selectedPlaceId);
     if (!place) return;
-    mapRef.current?.flyTo({
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Keep the selected point away from the UI overlays so the popup above
+    // the marker isn't clipped by the left panel, top toolbar, or mobile
+    // bottom sheet.
+    const isMobile = window.innerWidth < 1024;
+    const padding = isMobile
+      ? { top: 120, bottom: 280, left: 20, right: 20 }
+      : { top: 120, bottom: 90, left: 360, right: 90 };
+
+    // Refresh marker styles immediately so the selected one stands out.
+    updateMarkersRef.current();
+
+    map.flyTo({
       center: [place.longitude, place.latitude],
-      zoom: 15,
+      zoom: 16,
       essential: true,
+      padding,
     });
+
+    // Open the popup only after the camera settles so MapLibre can place it
+    // using the final viewport and avoid clipping during the animation.
+    map.once("moveend", () => {
+      openPopupForIdRef.current = selectedPlaceId;
+      updateMarkersRef.current();
+    });
+
     initialFitDoneRef.current = true;
+    prevSelectedPlaceIdRef.current = selectedPlaceId;
   }, [mapLoaded, selectedPlaceId, places]);
 
   const handleLocate = () => {
