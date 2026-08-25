@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   MapPin,
   LogIn,
@@ -11,6 +11,7 @@ import {
   Plus,
   Menu,
   ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/supabase/auth-context";
@@ -46,6 +47,8 @@ type MapExperienceProps = {
   places: Place[];
 };
 
+type SheetState = "collapsed" | "peek" | "expanded";
+
 export function MapExperience({ places }: MapExperienceProps) {
   const [filters, setFilters] = useUrlFilters();
   const [showPlaydates, setShowPlaydates] = useState(false);
@@ -60,7 +63,7 @@ export function MapExperience({ places }: MapExperienceProps) {
   const [createFromPlaceId, setCreateFromPlaceId] = useState<string | undefined>();
   const [nearbyPlaydates, setNearbyPlaydates] = useState<Playdate[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
-  const [sheetExpanded, setSheetExpanded] = useState(false);
+  const [sheetState, setSheetState] = useState<SheetState>("peek");
   const initialExpandDone = useRef(false);
   const { user, role } = useAuth();
 
@@ -113,7 +116,7 @@ export function MapExperience({ places }: MapExperienceProps) {
 
   const handleSelectPlace = (place: Place) => {
     setSelectedPlaceId(place.id);
-    setSheetExpanded(false);
+    setSheetState("peek");
   };
 
   // Auto-expand mobile bottom sheet when URL has active filters
@@ -129,10 +132,16 @@ export function MapExperience({ places }: MapExperienceProps) {
         (filters.sortBy && filters.sortBy !== "relevance"),
     );
     if (hasActiveFilters) {
-      setSheetExpanded(true);
+      setSheetState("expanded");
     }
     initialExpandDone.current = true;
   }, [filters]);
+
+  const cycleSheetState = useCallback(() => {
+    setSheetState((prev) =>
+      prev === "collapsed" ? "peek" : prev === "peek" ? "expanded" : "collapsed",
+    );
+  }, []);
 
   return (
     <main className="relative h-dvh overflow-hidden bg-[#fffaf4]">
@@ -367,8 +376,9 @@ export function MapExperience({ places }: MapExperienceProps) {
       <MobileBottomSheet
         places={filteredPlaces}
         resultCount={filteredPlaces.length}
-        expanded={sheetExpanded}
-        onToggle={() => setSheetExpanded((v) => !v)}
+        state={sheetState}
+        onCycle={cycleSheetState}
+        onSetState={setSheetState}
         favoriteIds={favoriteIds}
         onToggleFavorite={toggleFavorite}
         onSelectPlace={handleSelectPlace}
@@ -403,8 +413,9 @@ export function MapExperience({ places }: MapExperienceProps) {
 function MobileBottomSheet({
   places,
   resultCount,
-  expanded,
-  onToggle,
+  state,
+  onCycle,
+  onSetState,
   favoriteIds,
   onToggleFavorite,
   onSelectPlace,
@@ -412,49 +423,111 @@ function MobileBottomSheet({
 }: {
   places: Place[];
   resultCount: number;
-  expanded: boolean;
-  onToggle: () => void;
+  state: SheetState;
+  onCycle: () => void;
+  onSetState: (state: SheetState) => void;
   favoriteIds: Set<string>;
   onToggleFavorite: (id: string) => void;
   onSelectPlace: (place: Place) => void;
   isFavoritesEnabled: boolean;
 }) {
   const listRef = useRef<HTMLDivElement | null>(null);
+  const startY = useRef(0);
+  const currentY = useRef(0);
+  const isDragging = useRef(false);
+  const THRESHOLD = 80;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startY.current = e.touches[0].clientY;
+    currentY.current = startY.current;
+    isDragging.current = true;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging.current) return;
+    currentY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    const delta = startY.current - currentY.current;
+    if (delta > THRESHOLD) {
+      // swiped up
+      onSetState(state === "collapsed" ? "peek" : "expanded");
+    } else if (delta < -THRESHOLD) {
+      // swiped down
+      onSetState(state === "expanded" ? "peek" : "collapsed");
+    } else {
+      // tap
+      onCycle();
+    }
+  };
+
+  const stateStyles = {
+    collapsed: {
+      transform: "translateY(calc(100% - 72px))",
+      height: "auto",
+    },
+    peek: {
+      transform: "translateY(0)",
+      height: "auto",
+      top: "auto",
+      bottom: 0,
+    },
+    expanded: {
+      transform: "translateY(0)",
+      height: "calc(100dvh - 80px)",
+      top: 80,
+      bottom: 0,
+    },
+  };
 
   return (
     <div
-      className={`lg:hidden fixed bottom-0 left-0 right-0 z-20 bg-white rounded-t-3xl border-t border-brand-200 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] transition-transform duration-300 ease-out ${
-        expanded ? "translate-y-0 top-[80px]" : ""
-      }`}
-      style={{ height: expanded ? "calc(100dvh - 80px)" : "auto" }}
+      className="lg:hidden fixed left-0 right-0 z-20 bg-white rounded-t-3xl border-t border-brand-200 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] transition-transform duration-300 ease-out"
+      style={stateStyles[state]}
     >
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full flex justify-center pt-2 pb-1"
+      <div
+        className="touch-pan-y"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
-        <div className="w-10 h-1 rounded-full bg-brand-300" />
-      </button>
-      <div className="px-4 pb-2 flex items-center justify-between">
-        <h3 className="font-black text-base text-brand-800">
-          搜索结果 <span className="text-brand-accent">{resultCount}</span>
-        </h3>
         <button
           type="button"
-          onClick={onToggle}
-          className={`text-brand-400 transition-transform ${expanded ? "rotate-180" : ""}`}
+          onClick={onCycle}
+          className="w-full flex justify-center pt-2 pb-1"
         >
-          <ChevronUp className="h-5 w-5" />
+          <div className="w-10 h-1 rounded-full bg-brand-300" />
         </button>
+        <div className="px-4 pb-2 flex items-center justify-between">
+          <h3 className="font-black text-base text-brand-800">
+            搜索结果 <span className="text-brand-accent">{resultCount}</span>
+          </h3>
+          <button
+            type="button"
+            onClick={onCycle}
+            className="text-brand-400 transition-transform"
+          >
+            {state === "collapsed" ? (
+              <ChevronUp className="h-5 w-5" />
+            ) : state === "expanded" ? (
+              <ChevronDown className="h-5 w-5" />
+            ) : (
+              <ChevronUp className="h-5 w-5" />
+            )}
+          </button>
+        </div>
       </div>
       <div
         ref={listRef}
         className={`px-4 pb-5 flex gap-3 ${
-          expanded
+          state === "expanded"
             ? "flex-wrap overflow-y-auto overflow-x-hidden custom-scroll"
             : "overflow-x-auto scrollbar-hide"
         }`}
-        style={{ height: expanded ? "calc(100dvh - 80px)" : "280px" }}
+        style={{ height: state === "expanded" ? "calc(100% - 72px)" : "280px" }}
       >
         {places.length === 0 ? (
           <div className="w-full">

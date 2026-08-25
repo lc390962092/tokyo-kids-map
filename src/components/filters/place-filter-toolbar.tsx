@@ -17,19 +17,6 @@ import {
 } from "@/data/place-options";
 import type { Place, PlaceCategory, PlaceFeature, PlaceFilters } from "@/types/place";
 
-const MOBILE_FEATURE_IDS: PlaceFeature[] = [
-  "free",
-  "rainy_day",
-  "stroller_friendly",
-  "parking_easy",
-];
-const MOBILE_CATEGORY_IDS: PlaceCategory[] = [
-  "park",
-  "zoo",
-  "aquarium",
-  "museum",
-  "indoor_play",
-];
 
 const SORT_LABELS: Record<NonNullable<PlaceFilters["sortBy"]>, string> = {
   relevance: "推荐排序",
@@ -414,45 +401,6 @@ export function PlaceFilterToolbar({
             onReset={reset}
             compact
           />
-        </div>
-
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide pointer-events-auto pb-1">
-          {ageOptions.map((age) => (
-            <FilterChip
-              key={age.id}
-              active={filters.ageRange === age.id}
-              onClick={() => toggleAge(age.id)}
-            >
-              {age.label}
-            </FilterChip>
-          ))}
-          {featureOptions
-            .filter((f) => MOBILE_FEATURE_IDS.includes(f.id))
-            .map((feat) => (
-              <FilterChip
-                key={feat.id}
-                active={filters.features.includes(feat.id)}
-                onClick={() => toggleFeature(feat.id)}
-              >
-                {feat.label}
-              </FilterChip>
-            ))}
-          {categoryOptions
-            .filter((c) => MOBILE_CATEGORY_IDS.includes(c.id))
-            .map((cat) => (
-              <FilterChip
-                key={cat.id}
-                active={filters.categories.includes(cat.id)}
-                onClick={() => toggleCategory(cat.id)}
-                style={
-                  filters.categories.includes(cat.id)
-                    ? { backgroundColor: cat.color, borderColor: cat.color }
-                    : undefined
-                }
-              >
-                {cat.label}
-              </FilterChip>
-            ))}
         </div>
       </div>
 
