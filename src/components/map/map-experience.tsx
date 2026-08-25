@@ -17,7 +17,8 @@ import { useAuth } from "@/lib/supabase/auth-context";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { PlaceFilterToolbar } from "@/components/filters/place-filter-toolbar";
 import { filterPlaces, defaultFilters } from "@/lib/place-filters";
-import type { Place, PlaceFilters } from "@/types/place";
+import { useUrlFilters } from "@/lib/hooks/use-url-filters";
+import type { Place } from "@/types/place";
 import {
   fetchUserFavorites,
   addFavorite,
@@ -46,7 +47,7 @@ type MapExperienceProps = {
 };
 
 export function MapExperience({ places }: MapExperienceProps) {
-  const [filters, setFilters] = useState<PlaceFilters>(defaultFilters);
+  const [filters, setFilters] = useUrlFilters();
   const [showPlaydates, setShowPlaydates] = useState(false);
   const [playdatesFeatureEnabled, setPlaydatesFeatureEnabled] = useState(true);
   const [featureLoading, setFeatureLoading] = useState(true);
@@ -121,6 +122,7 @@ export function MapExperience({ places }: MapExperienceProps) {
         <PlaceFilterToolbar
           filters={filters}
           resultCount={filteredPlaces.length}
+          places={places}
           onChange={setFilters}
         />
       </div>
@@ -130,6 +132,7 @@ export function MapExperience({ places }: MapExperienceProps) {
         <PlaceFilterToolbar
           filters={filters}
           resultCount={filteredPlaces.length}
+          places={places}
           onChange={setFilters}
         />
       </div>

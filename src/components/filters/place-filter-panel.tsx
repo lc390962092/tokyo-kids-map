@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { RotateCcw, SlidersHorizontal, Calendar, MapPin } from "lucide-react";
 import { ageOptions, categoryOptions, featureOptions } from "@/data/place-options";
+import { defaultFilters } from "@/lib/place-filters";
 import type { PlaceCategory, PlaceFeature, PlaceFilters } from "@/types/place";
 import type { Playdate } from "@/types/playdate";
 
@@ -69,7 +70,7 @@ export function PlaceFilterPanel({
         </div>
         <button
           type="button"
-          onClick={() => onChange({ categories: [], features: [] })}
+          onClick={() => onChange(defaultFilters)}
           className="grid h-10 w-10 place-items-center rounded-full border border-[#f4d9cc] bg-white text-[#9a6f61] shadow-sm transition hover:bg-[#fff2eb]"
           aria-label="重置筛选"
           title="重置筛选"

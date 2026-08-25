@@ -4,6 +4,7 @@ import type { Place, PlaceFilters } from "@/types/place";
 export const defaultFilters: PlaceFilters = {
   categories: [],
   features: [],
+  wards: [],
   sortBy: "relevance",
 };
 
@@ -37,6 +38,10 @@ export function filterPlaces(
       return true;
     });
     if (!featureOk) return false;
+
+    if (filters.wards.length > 0 && !filters.wards.includes(place.ward)) {
+      return false;
+    }
 
     if (search) {
       const haystack = [

@@ -13,7 +13,7 @@ import {
   categoryOptions,
   featureOptions,
 } from "@/data/place-options";
-import type { PlaceCategory, PlaceFeature, PlaceFilters } from "@/types/place";
+import type { Place, PlaceCategory, PlaceFeature, PlaceFilters } from "@/types/place";
 
 const MOBILE_FEATURE_IDS: PlaceFeature[] = [
   "free",
@@ -32,26 +32,45 @@ const MOBILE_CATEGORY_IDS: PlaceCategory[] = [
 type PlaceFilterToolbarProps = {
   filters: PlaceFilters;
   resultCount: number;
+  places: Place[];
   onChange: (filters: PlaceFilters) => void;
 };
 
 export function PlaceFilterToolbar({
   filters,
   resultCount,
+  places,
   onChange,
 }: PlaceFilterToolbarProps) {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [mobileSortOpen, setMobileSortOpen] = useState(false);
   const [searchFocus, setSearchFocus] = useState(false);
 
+  const wardOptions = useMemo(
+    () => Array.from(new Set(places.map((p) => p.ward))).sort(),
+    [places],
+  );
+
   const activeCount = useMemo(() => {
     return (
       (filters.ageRange ? 1 : 0) +
       filters.categories.length +
       filters.features.length +
+      filters.wards.length +
       (filters.onlyFavorites ? 1 : 0)
     );
   }, [filters]);
+
+  const toggleWard = useCallback(
+    (ward: string) =>
+      onChange({
+        ...filters,
+        wards: filters.wards.includes(ward)
+          ? filters.wards.filter((w) => w !== ward)
+          : [...filters.wards, ward],
+      }),
+    [filters, onChange],
+  );
 
   const setSearch = useCallback(
     (searchText: string) => onChange({ ...filters, searchText }),
@@ -101,8 +120,9 @@ export function PlaceFilterToolbar({
       onChange({
         categories: [],
         features: [],
+        wards: [],
         sortBy: "relevance",
-      }),
+      } as PlaceFilters),
     [onChange],
   );
 
@@ -210,6 +230,18 @@ export function PlaceFilterToolbar({
                 onClick={() => toggleFeature(feat.id)}
               >
                 {feat.label}
+              </FilterChip>
+            ))}
+          </FilterChipGroup>
+
+          <FilterChipGroup label="行政区">
+            {wardOptions.map((ward) => (
+              <FilterChip
+                key={ward}
+                active={filters.wards.includes(ward)}
+                onClick={() => toggleWard(ward)}
+              >
+                {ward}
               </FilterChip>
             ))}
           </FilterChipGroup>
@@ -374,6 +406,20 @@ export function PlaceFilterToolbar({
                         className="h-5 w-5 accent-brand-accent"
                       />
                     </label>
+                  ))}
+                </div>
+              </MobileFilterSection>
+
+              <MobileFilterSection title="行政区">
+                <div className="flex flex-wrap gap-2">
+                  {wardOptions.map((ward) => (
+                    <FilterChip
+                      key={ward}
+                      active={filters.wards.includes(ward)}
+                      onClick={() => toggleWard(ward)}
+                    >
+                      {ward}
+                    </FilterChip>
                   ))}
                 </div>
               </MobileFilterSection>
