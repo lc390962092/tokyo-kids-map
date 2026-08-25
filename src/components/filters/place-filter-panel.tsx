@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { RotateCcw, SlidersHorizontal, Calendar, MapPin } from "lucide-react";
+import { RotateCcw, SlidersHorizontal, Calendar, MapPin, X } from "lucide-react";
 import { ageOptions, categoryOptions, featureOptions } from "@/data/place-options";
 import { defaultFilters } from "@/lib/place-filters";
 import type { PlaceCategory, PlaceFeature, PlaceFilters } from "@/types/place";
@@ -46,6 +46,75 @@ export function PlaceFilterPanel({
     });
   };
 
+  const removeCondition = (type: string, value?: string) => {
+    switch (type) {
+      case "ageRange":
+        onChange({ ...filters, ageRange: undefined });
+        break;
+      case "category":
+        onChange({
+          ...filters,
+          categories: filters.categories.filter((c) => c !== value),
+        });
+        break;
+      case "feature":
+        onChange({
+          ...filters,
+          features: filters.features.filter((f) => f !== value),
+        });
+        break;
+      case "ward":
+        onChange({
+          ...filters,
+          wards: filters.wards.filter((w) => w !== value),
+        });
+        break;
+      case "onlyFavorites":
+        onChange({ ...filters, onlyFavorites: false });
+        break;
+      case "searchText":
+        onChange({ ...filters, searchText: "" });
+        break;
+      case "sortBy":
+        onChange({ ...filters, sortBy: "relevance" });
+        break;
+    }
+  };
+
+  const categoryLabel = (id: PlaceCategory) =>
+    categoryOptions.find((c) => c.id === id)?.label ?? id;
+
+  const featureLabel = (id: PlaceFeature) =>
+    featureOptions.find((f) => f.id === id)?.label ?? id;
+
+  const ageLabel = ageOptions.find((a) => a.id === filters.ageRange)?.label;
+
+  const activeTags: { key: string; type: string; value?: string; label: string }[] = [];
+
+  if (filters.searchText) {
+    activeTags.push({ key: "search", type: "searchText", label: `🔍 ${filters.searchText}` });
+  }
+  if (filters.onlyFavorites) {
+    activeTags.push({ key: "fav", type: "onlyFavorites", label: "❤️ 只看收藏" });
+  }
+  if (filters.ageRange && ageLabel) {
+    activeTags.push({ key: "age", type: "ageRange", label: `👶 ${ageLabel}` });
+  }
+  filters.categories.forEach((id) =>
+    activeTags.push({ key: `cat-${id}`, type: "category", value: id, label: categoryLabel(id) }),
+  );
+  filters.features.forEach((id) =>
+    activeTags.push({ key: `feat-${id}`, type: "feature", value: id, label: featureLabel(id) }),
+  );
+  filters.wards.forEach((ward) =>
+    activeTags.push({ key: `ward-${ward}`, type: "ward", value: ward, label: ward }),
+  );
+  if ((filters.sortBy ?? "relevance") !== "relevance") {
+    const sortLabel =
+      filters.sortBy === "rating" ? "评分从高到低" : filters.sortBy === "name" ? "名称 A-Z" : "";
+    activeTags.push({ key: "sort", type: "sortBy", label: `⇅ ${sortLabel}` });
+  }
+
   return (
     <aside className="flex h-full flex-col gap-6 rounded-none bg-[#fffaf4] p-5 md:border-r md:border-[#f6ded2] md:p-6">
       <div className="flex items-start justify-between gap-4">
@@ -78,6 +147,25 @@ export function PlaceFilterPanel({
           <RotateCcw className="h-4 w-4" />
         </button>
       </div>
+
+      {activeTags.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-sm font-black text-[#3b4a45]">当前条件</h2>
+          <div className="flex flex-wrap gap-2">
+            {activeTags.map((tag) => (
+              <button
+                key={tag.key}
+                type="button"
+                onClick={() => removeCondition(tag.type, tag.value)}
+                className="inline-flex items-center gap-1 rounded-full border border-[#f2d8cb] bg-white px-3 py-1.5 text-xs font-bold text-[#76584e] shadow-sm transition hover:border-[#ff8c73] hover:text-[#ff8c73]"
+              >
+                {tag.label}
+                <X className="h-3 w-3" />
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       <FilterSection title="年龄">
         <div className="grid grid-cols-2 gap-2">

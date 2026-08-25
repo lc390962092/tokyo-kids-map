@@ -7,6 +7,8 @@ import {
   SlidersHorizontal,
   X,
   RotateCcw,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import {
   ageOptions,
@@ -29,6 +31,14 @@ const MOBILE_CATEGORY_IDS: PlaceCategory[] = [
   "indoor_play",
 ];
 
+const SORT_LABELS: Record<NonNullable<PlaceFilters["sortBy"]>, string> = {
+  relevance: "推荐排序",
+  rating: "评分从高到低",
+  name: "名称 A-Z",
+};
+
+type SectionKey = "age" | "category" | "feature" | "ward";
+
 type PlaceFilterToolbarProps = {
   filters: PlaceFilters;
   resultCount: number;
@@ -43,23 +53,39 @@ export function PlaceFilterToolbar({
   onChange,
 }: PlaceFilterToolbarProps) {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
-  const [mobileSortOpen, setMobileSortOpen] = useState(false);
   const [searchFocus, setSearchFocus] = useState(false);
+  const [expanded, setExpanded] = useState<Record<SectionKey, boolean>>({
+    age: false,
+    category: false,
+    feature: false,
+    ward: false,
+  });
 
   const wardOptions = useMemo(
     () => Array.from(new Set(places.map((p) => p.ward))).sort(),
     [places],
   );
 
-  const activeCount = useMemo(() => {
-    return (
-      (filters.ageRange ? 1 : 0) +
-      filters.categories.length +
-      filters.features.length +
-      filters.wards.length +
-      (filters.onlyFavorites ? 1 : 0)
-    );
+  const activeCountBySection = useMemo(() => {
+    return {
+      age: filters.ageRange ? 1 : 0,
+      category: filters.categories.length,
+      feature: filters.features.length,
+      ward: filters.wards.length,
+    };
   }, [filters]);
+
+  const activeCount =
+    activeCountBySection.age +
+    activeCountBySection.category +
+    activeCountBySection.feature +
+    activeCountBySection.ward +
+    (filters.onlyFavorites ? 1 : 0) +
+    (filters.searchText ? 1 : 0) +
+    ((filters.sortBy ?? "relevance") !== "relevance" ? 1 : 0);
+
+  const toggleSection = (key: SectionKey) =>
+    setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const toggleWard = useCallback(
     (ward: string) =>
@@ -126,7 +152,54 @@ export function PlaceFilterToolbar({
     [onChange],
   );
 
-  const hasActiveFilters = activeCount > 0;
+  const removeCondition = useCallback(
+    (type: string, value?: string) => {
+      switch (type) {
+        case "searchText":
+          onChange({ ...filters, searchText: "" });
+          break;
+        case "onlyFavorites":
+          onChange({ ...filters, onlyFavorites: false });
+          break;
+        case "sortBy":
+          onChange({ ...filters, sortBy: "relevance" });
+          break;
+        case "ageRange":
+          onChange({ ...filters, ageRange: undefined });
+          break;
+        case "category":
+          onChange({
+            ...filters,
+            categories: filters.categories.filter((c) => c !== value),
+          });
+          break;
+        case "feature":
+          onChange({
+            ...filters,
+            features: filters.features.filter((f) => f !== value),
+          });
+          break;
+        case "ward":
+          onChange({
+            ...filters,
+            wards: filters.wards.filter((w) => w !== value),
+          });
+          break;
+      }
+    },
+    [filters, onChange],
+  );
+
+  const ageLabel = useMemo(
+    () => ageOptions.find((a) => a.id === filters.ageRange)?.label,
+    [filters.ageRange],
+  );
+
+  const categoryLabel = (id: PlaceCategory) =>
+    categoryOptions.find((c) => c.id === id)?.label ?? id;
+
+  const featureLabel = (id: PlaceFeature) =>
+    featureOptions.find((f) => f.id === id)?.label ?? id;
 
   return (
     <>
@@ -192,70 +265,99 @@ export function PlaceFilterToolbar({
           </div>
         </div>
 
-        <div className="px-5 pb-3 flex items-center gap-5 overflow-x-auto scrollbar-hide">
-          <FilterChipGroup label="年龄">
-            {ageOptions.map((age) => (
-              <FilterChip
-                key={age.id}
-                active={filters.ageRange === age.id}
-                onClick={() => toggleAge(age.id)}
-              >
-                {age.label}
-              </FilterChip>
-            ))}
-          </FilterChipGroup>
+        {/* Active filters summary */}
+        <ActiveFiltersBar
+          filters={filters}
+          activeCount={activeCount}
+          ageLabel={ageLabel}
+          categoryLabel={categoryLabel}
+          featureLabel={featureLabel}
+          onRemove={removeCondition}
+          onReset={reset}
+        />
 
-          <FilterChipGroup label="分类">
-            {categoryOptions.slice(0, 7).map((cat) => (
-              <FilterChip
-                key={cat.id}
-                active={filters.categories.includes(cat.id)}
-                onClick={() => toggleCategory(cat.id)}
-                style={
-                  filters.categories.includes(cat.id)
-                    ? { backgroundColor: cat.color, borderColor: cat.color }
-                    : undefined
-                }
-              >
-                {cat.label}
-              </FilterChip>
-            ))}
-          </FilterChipGroup>
+        {/* Collapsible filter sections */}
+        <div className="px-5 pb-3 space-y-2">
+          <FilterSection
+            title="年龄"
+            activeCount={activeCountBySection.age}
+            expanded={expanded.age}
+            onToggle={() => toggleSection("age")}
+          >
+            <div className="flex flex-wrap gap-1.5">
+              {ageOptions.map((age) => (
+                <FilterChip
+                  key={age.id}
+                  active={filters.ageRange === age.id}
+                  onClick={() => toggleAge(age.id)}
+                >
+                  {age.label}
+                </FilterChip>
+              ))}
+            </div>
+          </FilterSection>
 
-          <FilterChipGroup label="特点">
-            {featureOptions.map((feat) => (
-              <FilterChip
-                key={feat.id}
-                active={filters.features.includes(feat.id)}
-                onClick={() => toggleFeature(feat.id)}
-              >
-                {feat.label}
-              </FilterChip>
-            ))}
-          </FilterChipGroup>
+          <FilterSection
+            title="分类"
+            activeCount={activeCountBySection.category}
+            expanded={expanded.category}
+            onToggle={() => toggleSection("category")}
+          >
+            <div className="flex flex-wrap gap-1.5">
+              {categoryOptions.slice(0, 7).map((cat) => (
+                <FilterChip
+                  key={cat.id}
+                  active={filters.categories.includes(cat.id)}
+                  onClick={() => toggleCategory(cat.id)}
+                  style={
+                    filters.categories.includes(cat.id)
+                      ? { backgroundColor: cat.color, borderColor: cat.color }
+                      : undefined
+                  }
+                >
+                  {cat.label}
+                </FilterChip>
+              ))}
+            </div>
+          </FilterSection>
 
-          <FilterChipGroup label="行政区">
-            {wardOptions.map((ward) => (
-              <FilterChip
-                key={ward}
-                active={filters.wards.includes(ward)}
-                onClick={() => toggleWard(ward)}
-              >
-                {ward}
-              </FilterChip>
-            ))}
-          </FilterChipGroup>
+          <FilterSection
+            title="特点"
+            activeCount={activeCountBySection.feature}
+            expanded={expanded.feature}
+            onToggle={() => toggleSection("feature")}
+          >
+            <div className="flex flex-wrap gap-1.5">
+              {featureOptions.map((feat) => (
+                <FilterChip
+                  key={feat.id}
+                  active={filters.features.includes(feat.id)}
+                  onClick={() => toggleFeature(feat.id)}
+                >
+                  {feat.label}
+                </FilterChip>
+              ))}
+            </div>
+          </FilterSection>
 
-          {hasActiveFilters && (
-            <button
-              type="button"
-              onClick={reset}
-              className="flex items-center gap-1 text-xs font-bold text-brand-accentHover hover:underline flex-none"
-            >
-              <RotateCcw className="h-3 w-3" />
-              重置
-            </button>
-          )}
+          <FilterSection
+            title="行政区"
+            activeCount={activeCountBySection.ward}
+            expanded={expanded.ward}
+            onToggle={() => toggleSection("ward")}
+          >
+            <div className="flex flex-wrap gap-1.5 max-h-[112px] overflow-y-auto custom-scroll pr-1">
+              {wardOptions.map((ward) => (
+                <FilterChip
+                  key={ward}
+                  active={filters.wards.includes(ward)}
+                  onClick={() => toggleWard(ward)}
+                >
+                  {ward}
+                </FilterChip>
+              ))}
+            </div>
+          </FilterSection>
         </div>
       </header>
 
@@ -298,6 +400,20 @@ export function PlaceFilterToolbar({
               </span>
             )}
           </button>
+        </div>
+
+        {/* Mobile active summary */}
+        <div className="pointer-events-auto">
+          <ActiveFiltersBar
+            filters={filters}
+            activeCount={activeCount}
+            ageLabel={ageLabel}
+            categoryLabel={categoryLabel}
+            featureLabel={featureLabel}
+            onRemove={removeCondition}
+            onReset={reset}
+            compact
+          />
         </div>
 
         <div className="flex gap-2 overflow-x-auto scrollbar-hide pointer-events-auto pb-1">
@@ -356,6 +472,19 @@ export function PlaceFilterToolbar({
             </div>
 
             <div className="flex-1 space-y-5 overflow-y-auto pr-1 custom-scroll">
+              <MobileFilterSection title="当前条件">
+                <ActiveFiltersBar
+                  filters={filters}
+                  activeCount={activeCount}
+                  ageLabel={ageLabel}
+                  categoryLabel={categoryLabel}
+                  featureLabel={featureLabel}
+                  onRemove={removeCondition}
+                  onReset={reset}
+                  compact
+                />
+              </MobileFilterSection>
+
               <MobileFilterSection title="分类">
                 <div className="flex flex-wrap gap-2">
                   {categoryOptions.map((cat) => (
@@ -411,7 +540,7 @@ export function PlaceFilterToolbar({
               </MobileFilterSection>
 
               <MobileFilterSection title="行政区">
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 max-h-[160px] overflow-y-auto custom-scroll pr-1">
                   {wardOptions.map((ward) => (
                     <FilterChip
                       key={ward}
@@ -458,60 +587,130 @@ export function PlaceFilterToolbar({
           </div>
         </div>
       )}
-
-      {/* Mobile sort modal */}
-      {mobileSortOpen && (
-        <div className="lg:hidden fixed inset-0 z-30 flex items-end bg-black/20 backdrop-blur-sm">
-          <div className="w-full rounded-t-3xl bg-white p-5 shadow-2xl">
-            <h3 className="mb-3 text-lg font-black text-brand-800">排序</h3>
-            <div className="space-y-2">
-              {[
-                { value: "relevance", label: "综合推荐" },
-                { value: "rating", label: "评分从高到低" },
-                { value: "name", label: "名称 A-Z" },
-              ].map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => {
-                    setSort(opt.value as PlaceFilters["sortBy"]);
-                    setMobileSortOpen(false);
-                  }}
-                  className={`w-full rounded-xl border px-4 py-3 text-left text-sm font-bold transition ${
-                    filters.sortBy === opt.value
-                      ? "border-brand-accent bg-brand-accent text-white"
-                      : "border-brand-200 bg-white text-brand-600"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={() => setMobileSortOpen(false)}
-              className="mt-4 w-full rounded-full bg-brand-50 py-3 text-sm font-bold text-brand-600"
-            >
-              取消
-            </button>
-          </div>
-        </div>
-      )}
     </>
   );
 }
 
-function FilterChipGroup({
-  label,
+function ActiveFiltersBar({
+  filters,
+  activeCount,
+  ageLabel,
+  categoryLabel,
+  featureLabel,
+  onRemove,
+  onReset,
+  compact = false,
+}: {
+  filters: PlaceFilters;
+  activeCount: number;
+  ageLabel?: string;
+  categoryLabel: (id: PlaceCategory) => string;
+  featureLabel: (id: PlaceFeature) => string;
+  onRemove: (type: string, value?: string) => void;
+  onReset: () => void;
+  compact?: boolean;
+}) {
+  const tags: { key: string; type: string; value?: string; label: string }[] = [];
+
+  if (filters.searchText) {
+    tags.push({ key: "search", type: "searchText", label: `🔍 ${filters.searchText}` });
+  }
+  if (filters.onlyFavorites) {
+    tags.push({ key: "fav", type: "onlyFavorites", label: "❤️ 只看收藏" });
+  }
+  if (filters.ageRange && ageLabel) {
+    tags.push({ key: "age", type: "ageRange", label: `👶 ${ageLabel}` });
+  }
+  filters.categories.forEach((id) =>
+    tags.push({ key: `cat-${id}`, type: "category", value: id, label: categoryLabel(id) }),
+  );
+  filters.features.forEach((id) =>
+    tags.push({ key: `feat-${id}`, type: "feature", value: id, label: featureLabel(id) }),
+  );
+  filters.wards.forEach((ward) =>
+    tags.push({ key: `ward-${ward}`, type: "ward", value: ward, label: ward }),
+  );
+  if ((filters.sortBy ?? "relevance") !== "relevance") {
+    tags.push({ key: "sort", type: "sortBy", label: `⇅ ${SORT_LABELS[filters.sortBy!]}` });
+  }
+
+  if (tags.length === 0) {
+    return null;
+  }
+
+  return (
+    <div
+      className={`flex items-start gap-2 ${
+        compact ? "flex-wrap" : "border-t border-brand-100"
+      } ${compact ? "px-0 py-0" : "px-5 py-2"}`}
+    >
+      <span
+        className={`flex-none rounded-full bg-brand-50 px-2 py-1 text-xs font-black text-brand-700 ${
+          compact ? "mt-0.5" : "mt-0.5"
+        }`}
+      >
+        已选 {activeCount}
+      </span>
+      <div className={`flex flex-wrap gap-1.5 ${compact ? "flex-1" : "flex-1"}`}>
+        {tags.map((tag) => (
+          <button
+            key={tag.key}
+            type="button"
+            onClick={() => onRemove(tag.type, tag.value)}
+            className="inline-flex items-center gap-1 rounded-full border border-brand-200 bg-white px-2.5 py-1 text-xs font-bold text-brand-700 transition hover:border-brand-accent hover:text-brand-accent"
+          >
+            {tag.label}
+            <X className="h-3 w-3" />
+          </button>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={onReset}
+        className="flex-none inline-flex items-center gap-1 text-xs font-bold text-brand-accentHover hover:underline mt-0.5"
+      >
+        <RotateCcw className="h-3 w-3" />
+        {!compact && "清空"}
+      </button>
+    </div>
+  );
+}
+
+function FilterSection({
+  title,
+  activeCount,
+  expanded,
+  onToggle,
   children,
 }: {
-  label: string;
+  title: string;
+  activeCount: number;
+  expanded: boolean;
+  onToggle: () => void;
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-2 flex-none">
-      <span className="text-xs font-black text-brand-700">{label}</span>
-      <div className="flex gap-1.5">{children}</div>
+    <div className="border border-brand-200 rounded-xl overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-3 py-2 bg-brand-50 hover:bg-brand-100 transition"
+      >
+        <span className="flex items-center gap-2 text-xs font-black text-brand-700">
+          {title}
+          {activeCount > 0 && (
+            <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-accent px-1 text-[10px] font-black text-white">
+              {activeCount}
+            </span>
+          )}
+        </span>
+        {expanded ? (
+          <ChevronUp className="h-3.5 w-3.5 text-brand-500" />
+        ) : (
+          <ChevronDown className="h-3.5 w-3.5 text-brand-500" />
+        )}
+      </button>
+      {expanded && <div className="px-3 py-2 bg-white">{children}</div>}
     </div>
   );
 }
