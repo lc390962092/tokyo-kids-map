@@ -145,8 +145,8 @@ export function MapExperience({ places }: MapExperienceProps) {
 
   return (
     <main className="relative h-dvh overflow-hidden bg-[#fffaf4]">
-      {/* Desktop: top toolbar */}
-      <div className="hidden lg:block absolute inset-x-0 top-0 z-20">
+      {/* Desktop: top toolbar (in flow so it pushes content down when expanded) */}
+      <div className="hidden lg:block flex-none z-20">
         <PlaceFilterToolbar
           filters={filters}
           resultCount={filteredPlaces.length}
@@ -156,7 +156,7 @@ export function MapExperience({ places }: MapExperienceProps) {
       </div>
 
       {/* Mobile: top search + chips */}
-      <div className="lg:hidden">
+      <div className="lg:hidden absolute top-0 left-0 right-0 z-20">
         <PlaceFilterToolbar
           filters={filters}
           resultCount={filteredPlaces.length}
@@ -165,7 +165,7 @@ export function MapExperience({ places }: MapExperienceProps) {
         />
       </div>
 
-      <div className="flex h-full flex-col lg:flex-row lg:pt-[104px]">
+      <div className="flex h-full flex-col lg:flex-row">
         {/* Desktop: left list panel */}
         <aside className="hidden lg:flex w-80 flex-col bg-white border-r border-brand-100 z-10 h-full">
           <div className="p-4 border-b border-brand-100 flex items-center justify-between">

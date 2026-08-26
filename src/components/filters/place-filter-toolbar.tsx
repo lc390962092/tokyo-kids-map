@@ -41,6 +41,7 @@ export function PlaceFilterToolbar({
 }: PlaceFilterToolbarProps) {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [searchFocus, setSearchFocus] = useState(false);
+  const [desktopExpanded, setDesktopExpanded] = useState(false);
   const [expanded, setExpanded] = useState<Record<SectionKey, boolean>>({
     age: false,
     category: false,
@@ -225,6 +226,23 @@ export function PlaceFilterToolbar({
           <div className="flex items-center gap-2 flex-none">
             <button
               type="button"
+              onClick={() => setDesktopExpanded((v) => !v)}
+              className={`chip inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-bold transition ${
+                desktopExpanded
+                  ? "border-brand-accent bg-brand-accent text-white"
+                  : "border-brand-200 bg-white text-brand-600"
+              }`}
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              {desktopExpanded ? "收起筛选" : "展开筛选"}
+              {activeCount > 0 && !desktopExpanded && (
+                <span className="ml-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white">
+                  {activeCount}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
               onClick={() => setOnlyFavorites(!filters.onlyFavorites)}
               className={`chip flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-bold transition ${
                 filters.onlyFavorites
@@ -264,88 +282,90 @@ export function PlaceFilterToolbar({
         />
 
         {/* Collapsible filter sections */}
-        <div className="px-5 pb-3 space-y-2">
-          <FilterSection
-            title="年龄"
-            activeCount={activeCountBySection.age}
-            expanded={expanded.age}
-            onToggle={() => toggleSection("age")}
-          >
-            <div className="flex flex-wrap gap-1.5">
-              {ageOptions.map((age) => (
-                <FilterChip
-                  key={age.id}
-                  active={filters.ageRange === age.id}
-                  onClick={() => toggleAge(age.id)}
-                >
-                  {age.label}
-                </FilterChip>
-              ))}
-            </div>
-          </FilterSection>
+        {desktopExpanded && (
+          <div className="px-5 pb-3 space-y-2">
+            <FilterSection
+              title="年龄"
+              activeCount={activeCountBySection.age}
+              expanded={expanded.age}
+              onToggle={() => toggleSection("age")}
+            >
+              <div className="flex flex-wrap gap-1.5">
+                {ageOptions.map((age) => (
+                  <FilterChip
+                    key={age.id}
+                    active={filters.ageRange === age.id}
+                    onClick={() => toggleAge(age.id)}
+                  >
+                    {age.label}
+                  </FilterChip>
+                ))}
+              </div>
+            </FilterSection>
 
-          <FilterSection
-            title="分类"
-            activeCount={activeCountBySection.category}
-            expanded={expanded.category}
-            onToggle={() => toggleSection("category")}
-          >
-            <div className="flex flex-wrap gap-1.5">
-              {categoryOptions.slice(0, 7).map((cat) => (
-                <FilterChip
-                  key={cat.id}
-                  active={filters.categories.includes(cat.id)}
-                  onClick={() => toggleCategory(cat.id)}
-                  style={
-                    filters.categories.includes(cat.id)
-                      ? { backgroundColor: cat.color, borderColor: cat.color }
-                      : undefined
-                  }
-                >
-                  {cat.label}
-                </FilterChip>
-              ))}
-            </div>
-          </FilterSection>
+            <FilterSection
+              title="分类"
+              activeCount={activeCountBySection.category}
+              expanded={expanded.category}
+              onToggle={() => toggleSection("category")}
+            >
+              <div className="flex flex-wrap gap-1.5">
+                {categoryOptions.slice(0, 7).map((cat) => (
+                  <FilterChip
+                    key={cat.id}
+                    active={filters.categories.includes(cat.id)}
+                    onClick={() => toggleCategory(cat.id)}
+                    style={
+                      filters.categories.includes(cat.id)
+                        ? { backgroundColor: cat.color, borderColor: cat.color }
+                        : undefined
+                    }
+                  >
+                    {cat.label}
+                  </FilterChip>
+                ))}
+              </div>
+            </FilterSection>
 
-          <FilterSection
-            title="特点"
-            activeCount={activeCountBySection.feature}
-            expanded={expanded.feature}
-            onToggle={() => toggleSection("feature")}
-          >
-            <div className="flex flex-wrap gap-1.5">
-              {featureOptions.map((feat) => (
-                <FilterChip
-                  key={feat.id}
-                  active={filters.features.includes(feat.id)}
-                  onClick={() => toggleFeature(feat.id)}
-                >
-                  {feat.label}
-                </FilterChip>
-              ))}
-            </div>
-          </FilterSection>
+            <FilterSection
+              title="特点"
+              activeCount={activeCountBySection.feature}
+              expanded={expanded.feature}
+              onToggle={() => toggleSection("feature")}
+            >
+              <div className="flex flex-wrap gap-1.5">
+                {featureOptions.map((feat) => (
+                  <FilterChip
+                    key={feat.id}
+                    active={filters.features.includes(feat.id)}
+                    onClick={() => toggleFeature(feat.id)}
+                  >
+                    {feat.label}
+                  </FilterChip>
+                ))}
+              </div>
+            </FilterSection>
 
-          <FilterSection
-            title="行政区"
-            activeCount={activeCountBySection.ward}
-            expanded={expanded.ward}
-            onToggle={() => toggleSection("ward")}
-          >
-            <div className="flex flex-wrap gap-1.5 max-h-[112px] overflow-y-auto custom-scroll pr-1">
-              {wardOptions.map((ward) => (
-                <FilterChip
-                  key={ward}
-                  active={filters.wards.includes(ward)}
-                  onClick={() => toggleWard(ward)}
-                >
-                  {ward}
-                </FilterChip>
-              ))}
-            </div>
-          </FilterSection>
-        </div>
+            <FilterSection
+              title="行政区"
+              activeCount={activeCountBySection.ward}
+              expanded={expanded.ward}
+              onToggle={() => toggleSection("ward")}
+            >
+              <div className="flex flex-wrap gap-1.5 max-h-[112px] overflow-y-auto custom-scroll pr-1">
+                {wardOptions.map((ward) => (
+                  <FilterChip
+                    key={ward}
+                    active={filters.wards.includes(ward)}
+                    onClick={() => toggleWard(ward)}
+                  >
+                    {ward}
+                  </FilterChip>
+                ))}
+              </div>
+            </FilterSection>
+          </div>
+        )}
       </header>
 
       {/* Mobile top bar */}
