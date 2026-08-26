@@ -55,6 +55,31 @@ a {
   overflow: hidden;
 }
 
+/* Scrollbar utilities used by filter panels */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #e5d3c8;
+  border-radius: 3px;
+}
+.custom-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #e5d3c8 transparent;
+}
+
 /* Selected map marker pulse ring */
 @keyframes marker-pulse {
   0% {

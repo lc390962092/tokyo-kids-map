@@ -4,19 +4,13 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   MapPin,
-  LogIn,
-  LogOut,
-  Shield,
-  UsersRound,
-  Plus,
-  Menu,
   ChevronUp,
   ChevronDown,
 } from "lucide-react";
-import Link from "next/link";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { PlaceFilterToolbar } from "@/components/filters/place-filter-toolbar";
+import { UserMenu } from "@/components/layout/user-menu";
 import { filterPlaces, defaultFilters } from "@/lib/place-filters";
 import { useUrlFilters } from "@/lib/hooks/use-url-filters";
 import type { Place } from "@/types/place";
@@ -59,7 +53,6 @@ export function MapExperience({ places }: MapExperienceProps) {
   );
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [createFromPlaceId, setCreateFromPlaceId] = useState<string | undefined>();
   const [nearbyPlaydates, setNearbyPlaydates] = useState<Playdate[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
@@ -144,7 +137,7 @@ export function MapExperience({ places }: MapExperienceProps) {
   }, []);
 
   return (
-    <main className="relative h-dvh overflow-hidden bg-[#fffaf4]">
+    <main className="relative flex h-dvh flex-col overflow-hidden bg-[#fffaf4]">
       {/* Desktop: top toolbar (in flow so it pushes content down when expanded) */}
       <div className="hidden lg:block flex-none z-20">
         <PlaceFilterToolbar
@@ -165,7 +158,7 @@ export function MapExperience({ places }: MapExperienceProps) {
         />
       </div>
 
-      <div className="flex h-full flex-col lg:flex-row">
+      <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
         {/* Desktop: left list panel */}
         <aside className="hidden lg:flex w-80 flex-col bg-white border-r border-brand-100 z-10 h-full">
           <div className="p-4 border-b border-brand-100 flex items-center justify-between">
@@ -219,143 +212,17 @@ export function MapExperience({ places }: MapExperienceProps) {
             onPlaydatesLoaded={setNearbyPlaydates}
           />
 
-          {/* PC top-right action bar */}
-          <div className="absolute right-4 top-4 z-10 hidden items-center gap-2 lg:flex">
-            {user && playdatesFeatureEnabled && !featureLoading && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setShowPlaydates((v) => !v)}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold shadow-md transition ${
-                    showPlaydates
-                      ? "bg-[#ff8c73] text-white"
-                      : "bg-white text-[#76584e]"
-                  }`}
-                >
-                  <UsersRound className="h-3.5 w-3.5" />
-                  {showPlaydates ? "隐藏约伴" : "显示约伴"}
-                  {nearbyPlaydates.length > 0 && (
-                    <span className="ml-0.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white">
-                      {nearbyPlaydates.length}
-                    </span>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsCreateOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#4a8c4a] px-3 py-2 text-xs font-bold text-white shadow-md transition hover:bg-[#3d7a3d]"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  发起约伴
-                </button>
-
-                <Link
-                  href="/member"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-2 text-xs font-bold text-[#76584e] shadow-md transition hover:bg-[#fffaf4]"
-                >
-                  <UsersRound className="h-3.5 w-3.5" />
-                  会员中心
-                </Link>
-              </>
-            )}
-
-            {role === "admin" && (
-              <Link
-                href="/admin"
-                className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-2 text-xs font-bold text-[#ff8c73] shadow-md transition hover:bg-[#fffaf4]"
-              >
-                <Shield className="h-3.5 w-3.5" />
-                管理后台
-              </Link>
-            )}
-
-            {user ? (
-              <button
-                type="button"
-                onClick={() => supabase.auth.signOut()}
-                className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-2 text-xs font-bold text-[#76584e] shadow-md transition hover:bg-[#fffaf4]"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                退出
-              </button>
-            ) : (
-              <Link
-                href="/login"
-                className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-2 text-xs font-bold text-[#76584e] shadow-md transition hover:bg-[#fffaf4]"
-              >
-                <LogIn className="h-3.5 w-3.5" />
-                登录
-              </Link>
-            )}
-          </div>
-
-          {/* Mobile menu */}
-          <div className="absolute right-4 top-[140px] z-10 lg:hidden">
-            <button
-              type="button"
-              onClick={() => setIsMenuOpen((v) => !v)}
-              className="grid h-11 w-11 place-items-center rounded-full bg-white text-[#76584e] shadow-lg"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-            {isMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-48 overflow-hidden rounded-2xl border border-[#ffe0ce] bg-white p-2 shadow-xl">
-                <MobileMenuItem
-                  icon={
-                    <UsersRound
-                      className={`h-4 w-4 ${showPlaydates ? "text-[#ff8c73]" : "text-[#c4a99b]"}`}
-                    />
-                  }
-                  label={showPlaydates ? "隐藏约伴" : "显示约伴"}
-                  onClick={() => {
-                    setShowPlaydates((v) => !v);
-                    setIsMenuOpen(false);
-                  }}
-                />
-                {user ? (
-                  <>
-                    <MobileMenuItem
-                      icon={<Plus className="h-4 w-4 text-[#4a8c4a]" />}
-                      label="发起约伴"
-                      onClick={() => {
-                        setIsCreateOpen(true);
-                        setIsMenuOpen(false);
-                      }}
-                    />
-                    <MobileMenuItem
-                      icon={<UsersRound className="h-4 w-4 text-[#76584e]" />}
-                      label="会员中心"
-                      href="/member"
-                      onClick={() => setIsMenuOpen(false)}
-                    />
-                    {role === "admin" && (
-                      <MobileMenuItem
-                        icon={<Shield className="h-4 w-4 text-[#ff8c73]" />}
-                        label="管理后台"
-                        href="/admin"
-                        onClick={() => setIsMenuOpen(false)}
-                      />
-                    )}
-                    <MobileMenuItem
-                      icon={<LogOut className="h-4 w-4 text-[#76584e]" />}
-                      label="退出登录"
-                      onClick={() => {
-                        supabase.auth.signOut();
-                        setIsMenuOpen(false);
-                      }}
-                    />
-                  </>
-                ) : (
-                  <MobileMenuItem
-                    icon={<LogIn className="h-4 w-4 text-[#76584e]" />}
-                    label="登录"
-                    href="/login"
-                    onClick={() => setIsMenuOpen(false)}
-                  />
-                )}
-              </div>
-            )}
+          {/* User menu (top-right on all viewports) */}
+          <div className="absolute right-4 top-4 z-30 lg:z-10">
+            <UserMenu
+              user={user}
+              role={role}
+              onLogout={() => supabase.auth.signOut()}
+              showPlaydates={showPlaydates && playdatesFeatureEnabled && !featureLoading}
+              onTogglePlaydates={() => setShowPlaydates((v) => !v)}
+              playdateCount={nearbyPlaydates.length}
+              onCreatePlaydate={() => setIsCreateOpen(true)}
+            />
           </div>
 
           {filteredPlaces.length === 0 && (
@@ -554,33 +421,3 @@ function MobileBottomSheet({
   );
 }
 
-function MobileMenuItem({
-  icon,
-  label,
-  onClick,
-  href,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onClick?: () => void;
-  href?: string;
-}) {
-  const className =
-    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-[#2c3834] transition hover:bg-[#fffaf4]";
-
-  if (href) {
-    return (
-      <Link href={href} className={className} onClick={onClick}>
-        {icon}
-        {label}
-      </Link>
-    );
-  }
-
-  return (
-    <button type="button" className={className} onClick={onClick}>
-      {icon}
-      {label}
-    </button>
-  );
-}

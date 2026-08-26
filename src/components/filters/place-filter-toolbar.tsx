@@ -17,7 +17,6 @@ import {
 } from "@/data/place-options";
 import type { Place, PlaceCategory, PlaceFeature, PlaceFilters } from "@/types/place";
 
-
 const SORT_LABELS: Record<NonNullable<PlaceFilters["sortBy"]>, string> = {
   relevance: "推荐排序",
   rating: "评分从高到低",
@@ -191,11 +190,12 @@ export function PlaceFilterToolbar({
 
   return (
     <>
-      {/* Desktop toolbar */}
-      <header className="hidden lg:flex flex-none flex-col border-b border-brand-100 bg-white z-20">
-        <div className="px-5 py-3 flex items-center gap-4">
-          <div className="flex items-center gap-2 flex-none">
-            <span className="text-2xl">🗾</span>
+      {/* Desktop header: compact, filter sections collapsed by default */}
+      <header className="hidden lg:flex flex-none flex-col border-b border-brand-200 bg-white shadow-sm z-20">
+        <div className="flex items-center gap-4 px-5 py-3">
+          {/* Brand */}
+          <div className="flex flex-none items-center gap-2">
+            <span className="text-2xl select-none">🗾</span>
             <div>
               <h1 className="text-lg font-black leading-tight text-brand-800">
                 东京溜娃地图
@@ -206,7 +206,8 @@ export function PlaceFilterToolbar({
             </div>
           </div>
 
-          <div className="relative flex-1 max-w-md">
+          {/* Search */}
+          <div className="relative max-w-md flex-1">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-brand-400" />
             <input
               type="text"
@@ -223,14 +224,41 @@ export function PlaceFilterToolbar({
             />
           </div>
 
-          <div className="flex items-center gap-2 flex-none">
+          {/* Actions */}
+          <div className="flex flex-none items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setOnlyFavorites(!filters.onlyFavorites)}
+              className={`chip inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-bold transition ${
+                filters.onlyFavorites
+                  ? "border-brand-accent bg-brand-accent text-white"
+                  : "border-brand-200 bg-white text-brand-600 hover:bg-brand-50"
+              }`}
+            >
+              <Heart
+                className="h-3.5 w-3.5"
+                fill={filters.onlyFavorites ? "currentColor" : "none"}
+              />
+              只看收藏
+            </button>
+
+            <select
+              value={filters.sortBy ?? "relevance"}
+              onChange={(e) => setSort(e.target.value as PlaceFilters["sortBy"])}
+              className="rounded-full border border-brand-200 bg-white px-3 py-2 text-xs font-bold text-brand-600 outline-none"
+            >
+              <option value="relevance">推荐</option>
+              <option value="rating">评分</option>
+              <option value="name">A-Z</option>
+            </select>
+
             <button
               type="button"
               onClick={() => setDesktopExpanded((v) => !v)}
               className={`chip inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-bold transition ${
                 desktopExpanded
                   ? "border-brand-accent bg-brand-accent text-white"
-                  : "border-brand-200 bg-white text-brand-600"
+                  : "border-brand-200 bg-white text-brand-600 hover:bg-brand-50"
               }`}
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />
@@ -241,36 +269,10 @@ export function PlaceFilterToolbar({
                 </span>
               )}
             </button>
-            <button
-              type="button"
-              onClick={() => setOnlyFavorites(!filters.onlyFavorites)}
-              className={`chip flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-bold transition ${
-                filters.onlyFavorites
-                  ? "border-brand-accent bg-brand-accent text-white"
-                  : "border-brand-200 bg-white text-brand-600"
-              }`}
-            >
-              <Heart
-                className="h-3.5 w-3.5"
-                fill={filters.onlyFavorites ? "currentColor" : "none"}
-              />
-              只看收藏
-            </button>
-            <select
-              value={filters.sortBy ?? "relevance"}
-              onChange={(e) =>
-                setSort(e.target.value as PlaceFilters["sortBy"])
-              }
-              className="rounded-full border border-brand-200 bg-white px-3 py-2 text-xs font-bold text-brand-600 outline-none"
-            >
-              <option value="relevance">推荐</option>
-              <option value="rating">评分</option>
-              <option value="name">A-Z</option>
-            </select>
           </div>
         </div>
 
-        {/* Active filters summary */}
+        {/* Active filters summary (always visible) */}
         <ActiveFiltersBar
           filters={filters}
           activeCount={activeCount}
@@ -283,7 +285,7 @@ export function PlaceFilterToolbar({
 
         {/* Collapsible filter sections */}
         {desktopExpanded && (
-          <div className="px-5 pb-3 space-y-2">
+          <div className="space-y-2 border-t border-brand-100 bg-brand-50/50 px-5 pb-3 pt-2">
             <FilterSection
               title="年龄"
               activeCount={activeCountBySection.age}
@@ -352,7 +354,7 @@ export function PlaceFilterToolbar({
               expanded={expanded.ward}
               onToggle={() => toggleSection("ward")}
             >
-              <div className="flex flex-wrap gap-1.5 max-h-[112px] overflow-y-auto custom-scroll pr-1">
+              <div className="custom-scroll flex max-h-[112px] flex-wrap gap-1.5 overflow-y-auto pr-1">
                 {wardOptions.map((ward) => (
                   <FilterChip
                     key={ward}
@@ -368,9 +370,9 @@ export function PlaceFilterToolbar({
         )}
       </header>
 
-      {/* Mobile top bar */}
-      <div className="lg:hidden absolute top-0 left-0 right-0 z-20 p-3 space-y-2 pointer-events-none">
-        <div className="flex gap-2 pointer-events-auto">
+      {/* Mobile: floating search + active filters, with right margin for user menu */}
+      <div className="lg:hidden pointer-events-none absolute left-0 right-0 top-0 z-20 space-y-2 p-3 pr-14">
+        <div className="pointer-events-auto flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-brand-400" />
             <input
@@ -384,7 +386,7 @@ export function PlaceFilterToolbar({
           <button
             type="button"
             onClick={() => setOnlyFavorites(!filters.onlyFavorites)}
-            className={`h-10 w-10 rounded-full border border-brand-200 bg-white/95 flex items-center justify-center shadow-sm backdrop-blur transition ${
+            className={`flex h-10 w-10 items-center justify-center rounded-full border border-brand-200 bg-white/95 shadow-sm backdrop-blur transition ${
               filters.onlyFavorites ? "text-red-500" : "text-brand-400"
             }`}
             aria-label="只看收藏"
@@ -397,7 +399,7 @@ export function PlaceFilterToolbar({
           <button
             type="button"
             onClick={() => setMobileFilterOpen(true)}
-            className="relative h-10 w-10 rounded-full border border-brand-200 bg-white/95 flex items-center justify-center shadow-sm backdrop-blur text-brand-600"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full border border-brand-200 bg-white/95 text-brand-600 shadow-sm backdrop-blur"
             aria-label="更多筛选"
           >
             <SlidersHorizontal className="h-4 w-4" />
@@ -409,7 +411,6 @@ export function PlaceFilterToolbar({
           </button>
         </div>
 
-        {/* Mobile active summary */}
         <div className="pointer-events-auto">
           <ActiveFiltersBar
             filters={filters}
@@ -426,7 +427,7 @@ export function PlaceFilterToolbar({
 
       {/* Mobile filter modal */}
       {mobileFilterOpen && (
-        <div className="lg:hidden fixed inset-0 z-30 flex items-end bg-black/20 backdrop-blur-sm">
+        <div className="fixed inset-0 z-30 flex items-end bg-black/20 backdrop-blur-sm lg:hidden">
           <div className="flex h-[80vh] w-full flex-col rounded-t-3xl bg-white p-5 shadow-2xl">
             <div className="flex items-center justify-between pb-3">
               <h3 className="text-lg font-black text-brand-800">筛选</h3>
@@ -439,7 +440,7 @@ export function PlaceFilterToolbar({
               </button>
             </div>
 
-            <div className="flex-1 space-y-5 overflow-y-auto pr-1 custom-scroll">
+            <div className="custom-scroll flex-1 space-y-5 overflow-y-auto pr-1">
               <MobileFilterSection title="当前条件">
                 <ActiveFiltersBar
                   filters={filters}
@@ -508,7 +509,7 @@ export function PlaceFilterToolbar({
               </MobileFilterSection>
 
               <MobileFilterSection title="行政区">
-                <div className="flex flex-wrap gap-2 max-h-[160px] overflow-y-auto custom-scroll pr-1">
+                <div className="custom-scroll flex max-h-[160px] flex-wrap gap-2 overflow-y-auto pr-1">
                   {wardOptions.map((ward) => (
                     <FilterChip
                       key={ward}
@@ -524,9 +525,7 @@ export function PlaceFilterToolbar({
               <MobileFilterSection title="排序">
                 <select
                   value={filters.sortBy ?? "relevance"}
-                  onChange={(e) =>
-                    setSort(e.target.value as PlaceFilters["sortBy"])
-                  }
+                  onChange={(e) => setSort(e.target.value as PlaceFilters["sortBy"])}
                   className="w-full rounded-xl border border-brand-200 bg-white px-3 py-2 text-sm font-medium text-brand-600"
                 >
                   <option value="relevance">综合推荐</option>
@@ -609,17 +608,13 @@ function ActiveFiltersBar({
   return (
     <div
       className={`flex items-start gap-2 ${
-        compact ? "flex-wrap" : "border-t border-brand-100"
-      } ${compact ? "px-0 py-0" : "px-5 py-2"}`}
+        compact ? "flex-wrap px-0 py-0" : "border-t border-brand-100 px-5 py-2"
+      }`}
     >
-      <span
-        className={`flex-none rounded-full bg-brand-50 px-2 py-1 text-xs font-black text-brand-700 ${
-          compact ? "mt-0.5" : "mt-0.5"
-        }`}
-      >
+      <span className="mt-0.5 flex-none rounded-full bg-brand-50 px-2 py-1 text-xs font-black text-brand-700">
         已选 {activeCount}
       </span>
-      <div className={`flex flex-wrap gap-1.5 ${compact ? "flex-1" : "flex-1"}`}>
+      <div className="flex flex-1 flex-wrap gap-1.5">
         {tags.map((tag) => (
           <button
             key={tag.key}
@@ -635,7 +630,7 @@ function ActiveFiltersBar({
       <button
         type="button"
         onClick={onReset}
-        className="flex-none inline-flex items-center gap-1 text-xs font-bold text-brand-accentHover hover:underline mt-0.5"
+        className="mt-0.5 flex-none inline-flex items-center gap-1 text-xs font-bold text-brand-accentHover transition hover:text-brand-accent"
       >
         <RotateCcw className="h-3 w-3" />
         {!compact && "清空"}
@@ -658,11 +653,11 @@ function FilterSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="border border-brand-200 rounded-xl overflow-hidden">
+    <div className="overflow-hidden rounded-xl border border-brand-200 bg-white">
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-3 py-2 bg-brand-50 hover:bg-brand-100 transition"
+        className="flex w-full items-center justify-between bg-brand-50 px-3 py-2 transition hover:bg-brand-100"
       >
         <span className="flex items-center gap-2 text-xs font-black text-brand-700">
           {title}
@@ -678,7 +673,7 @@ function FilterSection({
           <ChevronDown className="h-3.5 w-3.5 text-brand-500" />
         )}
       </button>
-      {expanded && <div className="px-3 py-2 bg-white">{children}</div>}
+      {expanded && <div className="bg-white px-3 py-2">{children}</div>}
     </div>
   );
 }
@@ -699,7 +694,7 @@ function FilterChip({
       type="button"
       onClick={onClick}
       style={style}
-      className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs font-bold transition ${
+      className={`rounded-full border px-3 py-1 text-xs font-bold transition whitespace-nowrap ${
         active
           ? "border-brand-accent bg-brand-accent text-white"
           : "border-brand-200 bg-white text-brand-600 hover:bg-brand-50"

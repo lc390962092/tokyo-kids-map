@@ -11,10 +11,12 @@ const supabase = createSupabaseClient();
 export function TopNav() {
   const { user, role } = useAuth();
   const pathname = usePathname();
-  const hideOnMobile = pathname === "/" || pathname === "/admin";
+  const hideOnHome = pathname === "/";
 
-  // 首页/admin 移动端：顶部工具栏已整合登录按钮，这里隐藏避免重叠
-  const mobileClass = hideOnMobile ? "hidden md:block" : "block";
+  // 首页由地图内的 UserMenu 统一提供用户/管理入口，这里完全隐藏避免重复
+  if (hideOnHome) return null;
+
+  const mobileClass = pathname === "/admin" ? "hidden md:block" : "block";
 
   return (
     <div className={`fixed right-4 top-4 z-50 max-w-fit ${mobileClass}`}>
